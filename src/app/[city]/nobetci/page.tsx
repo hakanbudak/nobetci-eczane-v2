@@ -3,6 +3,7 @@ import { cities } from "@/data/cities";
 import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
 import HomeView from "@/components/pharmacy/HomeView";
 import { notFound } from "next/navigation";
+import type { Pharmacy } from "@/types/pharmacy";
 
 interface CityPageProps {
     params: Promise<{ city: string }>;
@@ -35,7 +36,7 @@ export default async function CityPage({ params }: CityPageProps) {
     const city = cities.find((c) => c.slug === citySlug);
     if (!city) notFound();
 
-    let pharmacies;
+    let pharmacies: Pharmacy[];
     try {
         pharmacies = await fetchOnDutyPharmacies(citySlug);
     } catch {

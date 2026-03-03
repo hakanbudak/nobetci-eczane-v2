@@ -3,7 +3,7 @@ import { cities } from "@/data/cities";
 import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
 import HomeView from "@/components/pharmacy/HomeView";
 import { notFound } from "next/navigation";
-import type { City } from "@/types/pharmacy";
+import type { City, Pharmacy } from "@/types/pharmacy";
 
 interface DistrictPageProps {
     params: Promise<{ city: string; district: string }>;
@@ -46,7 +46,7 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
     const district = city.districts.find((d) => d.slug === districtSlug);
     if (!district) notFound();
 
-    let pharmacies;
+    let pharmacies: Pharmacy[];
     try {
         pharmacies = await fetchOnDutyPharmacies(citySlug, districtSlug);
     } catch {

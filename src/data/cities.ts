@@ -1,4 +1,4 @@
-import type { City } from '@/types/location'
+import type { City } from '@/types/pharmacy'
 
 export const cities: City[] = [
     {
