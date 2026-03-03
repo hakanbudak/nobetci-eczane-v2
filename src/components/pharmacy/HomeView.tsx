@@ -1,0 +1,340 @@
+"use client";
+
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
+import Header from "@/components/layout/Header";
+import PharmacyList from "@/components/pharmacy/PharmacyList";
+import CitySelector from "@/components/location/CitySelector";
+import { usePharmacyStore } from "@/store/pharmacyStore";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
+import { findNearestCity } from "@/utils/reverseGeocode";
+import { calculateDistance } from "@/utils/distance";
+import type { Pharmacy, Coordinates } from "@/types/pharmacy";
+import type { PharmacyMapRef } from "./PharmacyMap";
+
+const PharmacyMap = dynamic(() => import("./PharmacyMap"), { ssr: false });
+
+interface HomeViewProps {
+    initialPharmacies?: Pharmacy[];
+    initialCitySlug?: string;
+    initialCityName?: string;
+    initialDistrictSlug?: string;
+    initialDistrictName?: string;
+}
+
+export default function HomeView({
+    initialPharmacies = [],
+    initialCitySlug = "",
+    initialCityName = "",
+    initialDistrictSlug = "",
+    initialDistrictName = "",
+}: HomeViewProps) {
+    const [pharmacies, setPharmacies] = useState<Pharmacy[]>(initialPharmacies);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [activePharmacy, setActivePharmacy] = useState<Pharmacy | null>(null);
+    const [isListVisible, setIsListVisible] = useState(true);
+
+    const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
+    const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
+    const [selectedDistrictName, setSelectedDistrictName] = useState(initialDistrictName);
+    const [detectedCityName, setDetectedCityName] = useState(initialCityName);
+
+    const { coordinates, status, requestLocation } = useGeolocation();
+    const desktopMapRef = useRef<PharmacyMapRef>(null);
+    const mobileMapRef = useRef<PharmacyMapRef>(null);
+
+    const [translateY, setTranslateY] = useState(0);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const pointerStartY = useRef(0);
+    const translateAtDragStart = useRef(0);
+    const velocityHistory = useRef<Array<{ t: number; y: number }>>([]);
+
+    const bottomPadding = useMemo(() => {
+        if (typeof window === "undefined") return 0;
+        return Math.max(0, window.innerHeight - translateY);
+    }, [translateY]);
+
+    function zoomAllMaps() {
+        desktopMapRef.current?.zoomToPharmacies();
+        mobileMapRef.current?.zoomToPharmacies();
+    }
+
+    function sortByDistance(coords: Coordinates, list: Pharmacy[]) {
+        return [...list]
+            .map((p) => ({ ...p, distance: calculateDistance(coords, p.location) }))
+            .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    }
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setTranslateY(Math.round(window.innerHeight * 0.45));
+        }
+    }, []);
+
+    useEffect(() => {
+        async function init() {
+            if (pharmacies.length === 0 && !selectedCitySlug) {
+                const coords = await requestLocation();
+                if (coords) {
+                    const nearest = findNearestCity(coords.lat, coords.lng);
+                    setDetectedCityName(nearest.name);
+                    setSelectedCitySlug(nearest.slug);
+                    setIsLoading(true);
+                    try {
+                        const data = await fetchOnDutyPharmacies(nearest.slug);
+                        setPharmacies(sortByDistance(coords, data));
+                    } catch {
+                        setError("Eczane verileri yüklenemedi.");
+                    }
+                    setIsLoading(false);
+                }
+            } else if (pharmacies.length > 0) {
+                const coords = await requestLocation();
+                if (coords) setPharmacies(sortByDistance(coords, pharmacies));
+            }
+        }
+        init();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleCityChange = useCallback(async (_cityName: string, citySlug: string) => {
+        setSelectedCitySlug(citySlug);
+        setSelectedDistrictSlug("");
+        setSelectedDistrictName("");
+        setDetectedCityName("");
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await fetchOnDutyPharmacies(citySlug);
+            const sorted = coordinates ? sortByDistance(coordinates, data) : data;
+            setPharmacies(sorted);
+        } catch {
+            setError("Eczane verileri yüklenemedi.");
+        }
+        setIsLoading(false);
+        setTimeout(() => zoomAllMaps(), 100);
+    }, [coordinates]);
+
+    const handleDistrictChange = useCallback(async (districtName: string, districtSlug: string) => {
+        setSelectedDistrictSlug(districtSlug);
+        setSelectedDistrictName(districtName);
+        if (selectedCitySlug) {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const data = await fetchOnDutyPharmacies(selectedCitySlug, districtSlug);
+                const sorted = coordinates ? sortByDistance(coordinates, data) : data;
+                setPharmacies(sorted);
+            } catch {
+                setError("Eczane verileri yüklenemedi.");
+            }
+            setIsLoading(false);
+            setTimeout(() => zoomAllMaps(), 100);
+        }
+    }, [selectedCitySlug, coordinates]);
+
+    const handleCityClear = useCallback(() => {
+        setSelectedCitySlug("");
+        setSelectedDistrictSlug("");
+        setSelectedDistrictName("");
+        setDetectedCityName("");
+        setPharmacies([]);
+    }, []);
+
+    function getMaxTranslate() {
+        return typeof window !== "undefined" ? window.innerHeight - 60 : 500;
+    }
+
+    function onHandlePointerDown(e: React.PointerEvent) {
+        setIsDragging(true);
+        setIsAnimating(false);
+        pointerStartY.current = e.clientY;
+        translateAtDragStart.current = translateY;
+        velocityHistory.current = [{ t: Date.now(), y: e.clientY }];
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    }
+
+    function onHandlePointerMove(e: React.PointerEvent) {
+        if (!isDragging) return;
+        const delta = e.clientY - pointerStartY.current;
+        const raw = translateAtDragStart.current + delta;
+        setTranslateY(Math.max(0, Math.min(raw, getMaxTranslate())));
+        const now = Date.now();
+        velocityHistory.current.push({ t: now, y: e.clientY });
+        while (velocityHistory.current.length > 1 && now - velocityHistory.current[0].t > 80) {
+            velocityHistory.current.shift();
+        }
+    }
+
+    function onHandlePointerUp() {
+        if (!isDragging) return;
+        setIsDragging(false);
+        const vh = velocityHistory.current;
+        let velocity = 0;
+        if (vh.length >= 2) {
+            const first = vh[0];
+            const last = vh[vh.length - 1];
+            const dt = last.t - first.t;
+            if (dt > 0) velocity = (last.y - first.y) / dt;
+        }
+        const momentum = velocity * 150;
+        const target = Math.max(0, Math.min(translateY + momentum, getMaxTranslate()));
+        setIsAnimating(true);
+        setTranslateY(target);
+        setTimeout(() => setIsAnimating(false), 420);
+    }
+
+    return (
+        <div className="h-[100dvh] w-full overflow-hidden bg-dark-900 flex flex-col">
+            <Header
+                locationStatus={status}
+                pharmacyCount={pharmacies.length}
+                cityName={detectedCityName || selectedCitySlug}
+            />
+            <div className="flex-1 overflow-hidden">
+                {/* ═══════════ DESKTOP ═══════════ */}
+                <div className="hidden lg:flex h-full w-full">
+                    <div className="relative flex-1 h-full min-w-0">
+                        <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2 pointer-events-none">
+                            {(status === "idle" || status === "requesting") && (
+                                <div className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-dark-200 rounded-lg px-3 py-2 text-xs border border-dark-700/50 shadow-lg pointer-events-auto w-fit">
+                                    <svg className="w-3.5 h-3.5 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Konum alınıyor...
+                                </div>
+                            )}
+                            {status === "granted" && detectedCityName && (
+                                <div className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-dark-200 rounded-lg px-3 py-2 text-xs border border-primary-700/30 shadow-lg pointer-events-auto w-fit">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+                                    <span>📍 {detectedCityName} · {pharmacies.length} eczane</span>
+                                </div>
+                            )}
+                            {(status === "denied" || status === "unavailable") && (
+                                <div className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-amber-400 rounded-lg px-3 py-2 text-xs border border-amber-700/30 shadow-lg pointer-events-auto w-fit">
+                                    <span>📍 Konum yok</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setIsListVisible(!isListVisible);
+                                setTimeout(() => desktopMapRef.current?.triggerResize(), 370);
+                            }}
+                            title={isListVisible ? "Listeyi Gizle" : "Listeyi Göster"}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-[1001] flex flex-col items-center justify-center gap-1 w-5 h-16 bg-dark-800 hover:bg-dark-700 border border-dark-600 hover:border-primary-500/60 rounded-l-lg shadow-xl transition-all duration-200 group"
+                        >
+                            <svg
+                                className={`w-3 h-3 text-dark-400 group-hover:text-primary-400 transition-all ${!isListVisible ? "rotate-180" : ""}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                style={{ transition: "transform 0.3s ease, color 0.2s" }}
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+
+                        <PharmacyMap
+                            ref={desktopMapRef}
+                            pharmacies={pharmacies}
+                            userLocation={coordinates}
+                            activePharmacy={activePharmacy}
+                            onSelectPharmacy={setActivePharmacy}
+                        />
+                    </div>
+
+                    {isListVisible && (
+                        <div className="w-[800px] shrink-0 h-full flex flex-col border-l border-dark-700/50">
+                            <div className="shrink-0 p-4 border-b border-dark-700/50 space-y-3 bg-dark-900">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-bold text-dark-100 truncate pr-2">
+                                        {detectedCityName ? `${detectedCityName} Nöbetçi Eczaneler` : "Nöbetçi Eczaneler"}
+                                    </h2>
+                                    {!isLoading && pharmacies.length > 0 && (
+                                        <span className="text-xs text-dark-500 font-medium whitespace-nowrap">{pharmacies.length} sonuç</span>
+                                    )}
+                                </div>
+                                <CitySelector
+                                    selectedCity={selectedCitySlug}
+                                    selectedDistrict={selectedDistrictName}
+                                    onCityChange={handleCityChange}
+                                    onDistrictChange={handleDistrictChange}
+                                    onClear={handleCityClear}
+                                />
+                            </div>
+                            {error && (
+                                <div className="mx-4 mt-3 bg-red-950/50 text-red-400 text-xs rounded-lg px-4 py-3 border border-red-800/30 shrink-0">
+                                    {error}
+                                </div>
+                            )}
+                            <div className="flex-1 overflow-y-auto p-4 min-h-0 overscroll-contain bg-dark-900">
+                                <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ═══════════ MOBİL ═══════════ */}
+                <div className="lg:hidden relative h-full w-full">
+                    <div className="absolute inset-0 z-0">
+                        <PharmacyMap
+                            ref={mobileMapRef}
+                            pharmacies={pharmacies}
+                            userLocation={coordinates}
+                            activePharmacy={activePharmacy}
+                            bottomPadding={bottomPadding}
+                            onSelectPharmacy={setActivePharmacy}
+                        />
+                    </div>
+                    <div
+                        className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
+                        style={{
+                            height: "93dvh",
+                            transform: `translateY(${translateY}px)`,
+                            transition: isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+                        }}
+                    >
+                        <div
+                            className="shrink-0 flex justify-center items-center h-8 cursor-grab active:cursor-grabbing select-none"
+                            style={{ touchAction: "none" }}
+                            onPointerDown={onHandlePointerDown}
+                            onPointerMove={onHandlePointerMove}
+                            onPointerUp={onHandlePointerUp}
+                            onPointerCancel={onHandlePointerUp}
+                        >
+                            <div className={`w-10 h-1.5 rounded-full transition-colors duration-150 ${isDragging ? "bg-primary-400" : "bg-dark-600"}`} />
+                        </div>
+                        <div className="shrink-0 px-4 pb-3 border-b border-dark-700/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-sm font-bold text-dark-100 truncate pr-2">
+                                    {detectedCityName ? `${detectedCityName} Nöbetçi Eczaneler` : "Nöbetçi Eczaneler"}
+                                </h2>
+                                {!isLoading && pharmacies.length > 0 && (
+                                    <span className="text-xs text-dark-500 font-medium whitespace-nowrap">{pharmacies.length} sonuç</span>
+                                )}
+                            </div>
+                            <CitySelector
+                                selectedCity={selectedCitySlug}
+                                selectedDistrict={selectedDistrictName}
+                                onCityChange={handleCityChange}
+                                onDistrictChange={handleDistrictChange}
+                                onClear={handleCityClear}
+                            />
+                        </div>
+                        {error && (
+                            <div className="mx-4 mt-3 bg-red-950/50 text-red-400 text-xs rounded-lg px-4 py-3 border border-red-800/30 shrink-0">
+                                {error}
+                            </div>
+                        )}
+                        <div className="flex-1 overflow-y-auto p-4 min-h-0 overscroll-contain" style={{ touchAction: "pan-y" }}>
+                            <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
