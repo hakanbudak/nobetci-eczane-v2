@@ -212,7 +212,7 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
             map.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
             if (mapCenterOffset > 0) {
                 setTimeout(() => {
-                    map.panBy([0, mapCenterOffset], { animate: true, duration: 0.5 });
+                    map.panBy([0, -mapCenterOffset], { animate: true, duration: 0.5 });
                 }, 400);
             }
         }, 300);

@@ -243,7 +243,7 @@ export default function HomeView({
                     </div>
 
                     {isListVisible && (
-                        <div className="w-[800px] shrink-0 h-full flex flex-col border-l border-dark-700/50">
+                        <div className="w-[480px] shrink-0 h-full flex flex-col border-l border-dark-700/50">
                             <div className="shrink-0 p-4 border-b border-dark-700/50 space-y-3 bg-dark-900">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-sm font-bold text-dark-100 truncate pr-2">

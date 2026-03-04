@@ -13,7 +13,7 @@ interface PharmacyListProps {
 export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect }: PharmacyListProps) {
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 p-1">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
                 {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="bg-dark-800 border border-dark-700/50 rounded-xl p-4">
                         <div className="flex items-start gap-3 mb-3">
@@ -46,7 +46,7 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
     }
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 p-1">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
             {pharmacies.map((pharmacy, index) => (
                 <PharmacyCard
                     key={`${pharmacy.name}__${pharmacy.address}`}
