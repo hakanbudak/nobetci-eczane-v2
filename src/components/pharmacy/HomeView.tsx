@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
+import LocationPermissionModal from "@/components/common/LocationPermissionModal";
 import PharmacyList from "@/components/pharmacy/PharmacyList";
 import CitySelector from "@/components/location/CitySelector";
 import { usePharmacyStore } from "@/store/pharmacyStore";
@@ -35,6 +36,7 @@ export default function HomeView({
     const [error, setError] = useState<string | null>(null);
     const [activePharmacy, setActivePharmacy] = useState<Pharmacy | null>(null);
     const [isListVisible, setIsListVisible] = useState(true);
+    const [showLocationModal, setShowLocationModal] = useState(false);
 
     const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
     const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
@@ -71,29 +73,36 @@ export default function HomeView({
     }, []);
 
     useEffect(() => {
-        async function init() {
-            if (pharmacies.length === 0 && !selectedCitySlug) {
-                const coords = await requestLocation();
-                if (coords) {
-                    const nearest = findNearestCity(coords.lat, coords.lng);
-                    setDetectedCityName(nearest.name);
-                    setSelectedCitySlug(nearest.slug);
-                    setIsLoading(true);
-                    try {
-                        const data = await fetchOnDutyPharmacies(nearest.slug);
-                        setPharmacies(sortByDistance(coords, data));
-                    } catch {
-                        setError("Eczane verileri yüklenemedi.");
-                    }
-                    setIsLoading(false);
-                }
-            } else if (pharmacies.length > 0) {
-                const coords = await requestLocation();
+        if (pharmacies.length === 0 && !selectedCitySlug) {
+            setShowLocationModal(true);
+        } else if (pharmacies.length > 0) {
+            requestLocation().then((coords) => {
                 if (coords) setPharmacies(sortByDistance(coords, pharmacies));
-            }
+            });
         }
-        init();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleLocationAllow = useCallback(async () => {
+        setShowLocationModal(false);
+        const coords = await requestLocation();
+        if (coords) {
+            const nearest = findNearestCity(coords.lat, coords.lng);
+            setDetectedCityName(nearest.name);
+            setSelectedCitySlug(nearest.slug);
+            setIsLoading(true);
+            try {
+                const data = await fetchOnDutyPharmacies(nearest.slug);
+                setPharmacies(sortByDistance(coords, data));
+            } catch {
+                setError("Eczane verileri yüklenemedi.");
+            }
+            setIsLoading(false);
+        }
+    }, [requestLocation]);
+
+    const handleLocationDeny = useCallback(() => {
+        setShowLocationModal(false);
+    }, []);
 
     const handleCityChange = useCallback(async (_cityName: string, citySlug: string) => {
         setSelectedCitySlug(citySlug);
@@ -182,8 +191,12 @@ export default function HomeView({
         setTimeout(() => setIsAnimating(false), 420);
     }
 
+
     return (
         <div className="h-[100dvh] w-full overflow-hidden bg-dark-900 flex flex-col">
+            {showLocationModal && (
+                <LocationPermissionModal onAllow={handleLocationAllow} onDeny={handleLocationDeny} />
+            )}
             <Header
                 locationStatus={status}
                 pharmacyCount={pharmacies.length}

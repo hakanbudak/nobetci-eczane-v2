@@ -42,7 +42,7 @@ export function useCities() {
 
     const searchCities = useCallback(
         (query: string): City[] => {
-            if (!query) return [];
+            if (!query) return allCities;
             const q = query.toLowerCase();
             return allCities.filter(
                 (c) => c.name.toLowerCase().includes(q) || c.slug.includes(q)
