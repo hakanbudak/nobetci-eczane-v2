@@ -1,20 +1,20 @@
 # 💊 Nöbetçi Eczane
 
-Türkiye genelinde nöbetçi eczaneleri harita ve liste görünümünde gösteren, konum tabanlı modern web uygulaması.
+A modern, location-based web application that displays on-duty pharmacies across Turkey with interactive map and list views.
 
-## ✨ Özellikler
+## ✨ Features
 
-- 🗺️ **Harita Görünümü** — Leaflet tabanlı interaktif harita, eczane pin'leri ve popup bilgileri
-- 📍 **Konum Tabanlı** — Kullanıcı konumuna göre en yakın eczaneleri otomatik sıralama
-- 🔍 **Şehir & İlçe Filtresi** — 81 il ve tüm ilçelerde arama ve filtreleme
-- 📱 **Mobil Uyumlu** — Responsive tasarım, drag edilebilir bottom sheet
-- 🌙 **Dark Tema** — Modern koyu renk paleti
-- ⚡ **SEO Optimized** — SSG ile 816 statik sayfa (81 il + 731+ ilçe)
-- 🔐 **Güvenli API** — Server-side proxy ile API token koruması
+- 🗺️ **Interactive Map** — Leaflet-powered map with pharmacy pins and info popups
+- 📍 **Location-Based** — Automatically sorts pharmacies by proximity to user
+- 🔍 **City & District Filter** — Search and filter across all 81 provinces and districts
+- 📱 **Mobile Responsive** — Adaptive layout with draggable bottom sheet
+- 🌙 **Dark Theme** — Modern dark color palette
+- ⚡ **SEO Optimized** — 816 statically generated pages via SSG (81 cities + 731+ districts)
+- 🔐 **Secure API** — Server-side proxy keeps API tokens hidden from the client
 
-## 🛠️ Teknoloji Stack
+## 🛠️ Tech Stack
 
-| Kategori | Teknoloji |
+| Category | Technology |
 |---|---|
 | Framework | Next.js 14 (App Router) |
 | UI | React 18 + TypeScript |
@@ -22,19 +22,19 @@ Türkiye genelinde nöbetçi eczaneleri harita ve liste görünümünde göstere
 | State | Zustand |
 | Server State | React Query |
 | HTTP | Axios |
-| Harita | Leaflet |
+| Maps | Leaflet |
 | API | Pharmlush API |
 
-## 📁 Proje Yapısı
+## 📁 Project Structure
 
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── page.tsx            # Ana sayfa
+│   ├── page.tsx            # Home page
 │   ├── layout.tsx          # Root layout + metadata
 │   ├── v1/[...path]/       # API proxy route
-│   ├── [city]/nobetci/     # Şehir sayfaları (SSG)
-│   └── [city]/[district]/nobetci/  # İlçe sayfaları (SSG)
+│   ├── [city]/nobetci/     # City pages (SSG)
+│   └── [city]/[district]/nobetci/  # District pages (SSG)
 ├── components/
 │   ├── common/             # Providers, LocationPermissionModal
 │   ├── layout/             # Header
@@ -44,26 +44,26 @@ src/
 ├── services/               # API client, pharmacyService
 ├── store/                  # Zustand store
 ├── types/                  # TypeScript interfaces
-├── data/                   # Şehir/ilçe verileri, koordinatlar
+├── data/                   # City/district data, coordinates
 └── utils/                  # distance, slug, reverseGeocode
 ```
 
-## 🚀 Kurulum
+## 🚀 Getting Started
 
 ```bash
-# Bağımlılıkları yükle
+# Install dependencies
 npm install
 
-# .env dosyasını oluştur
+# Create environment file
 cp .env.example .env
 
-# Geliştirme sunucusunu başlat
+# Start development server
 npm run dev
 ```
 
-## ⚙️ Ortam Değişkenleri
+## ⚙️ Environment Variables
 
-| Değişken | Açıklama |
+| Variable | Description |
 |---|---|
 | `PHARMLUSH_API_TOKEN` | Pharmlush API Bearer token |
 
@@ -73,8 +73,8 @@ npm run dev
 npm run build
 ```
 
-816 statik sayfa üretir (81 il + 731+ ilçe). Tüm sayfalar ISR ile otomatik güncellenir.
+Generates 816 static pages (81 cities + 731+ districts). All pages are automatically updated via ISR.
 
-## 📄 Lisans
+## 📄 License
 
 MIT
