@@ -171,12 +171,12 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
         if (!map) return;
         map.setView([pharmacy.location.lat, pharmacy.location.lng], 14, { animate: false });
         markerMapRef.current.get(getMarkerKey(pharmacy))?.openPopup();
-        if (bottomPadding > 0) {
+        if (mapCenterOffset > 0) {
             requestAnimationFrame(() => {
-                map.panBy([50, bottomPadding / 5.5], { animate: true, duration: 0.5 });
+                map.panBy([0, -mapCenterOffset], { animate: true, duration: 0.5 });
             });
         }
-    }, [bottomPadding]);
+    }, [mapCenterOffset]);
 
     useImperativeHandle(ref, () => ({
         focusOnPharmacy,
