@@ -123,18 +123,18 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
     const fitBounds = useCallback(() => {
         const map = mapRef.current;
         if (!map || pharmacies.length === 0) return;
-        if (Date.now() - lastUserLocationTimeRef.current < 2000) return;
+        if (Date.now() - lastUserLocationTimeRef.current < 5000) return;
         const points = pharmacies
             .filter((p) => p.location.lat && p.location.lng)
             .map((p) => [p.location.lat, p.location.lng] as L.LatLngExpression);
         if (points.length > 0) {
             map.fitBounds(L.latLngBounds(points), {
                 paddingTopLeft: [40, 40],
-                paddingBottomRight: [20, 20 + bottomPadding],
+                paddingBottomRight: [20, 20],
                 maxZoom: 15,
             });
         }
-    }, [pharmacies, bottomPadding]);
+    }, [pharmacies]);
 
     const updateMarkers = useCallback(() => {
         const map = mapRef.current;
@@ -146,9 +146,8 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
 
         for (const pharmacy of pharmacies) {
             if (!pharmacy.location.lat || !pharmacy.location.lng) continue;
-            const isActive = activePharmacy?.name === pharmacy.name && activePharmacy?.address === pharmacy.address;
             const marker = L.marker([pharmacy.location.lat, pharmacy.location.lng], {
-                icon: createPharmacyIcon(pharmacy.name, isActive),
+                icon: createPharmacyIcon(pharmacy.name, false),
             });
             marker.bindPopup(createPopupContent(pharmacy), { closeButton: false, maxWidth: 250, autoPan: false });
             marker.on("click", () => onSelectPharmacy(pharmacy));
@@ -164,7 +163,7 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
         }
 
         fitBounds();
-    }, [pharmacies, activePharmacy, userLocation, onSelectPharmacy, fitBounds]);
+    }, [pharmacies, userLocation, onSelectPharmacy, fitBounds]);
 
     const focusOnPharmacy = useCallback((pharmacy: Pharmacy) => {
         const map = mapRef.current;
@@ -205,14 +204,13 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
 
     useEffect(() => {
         const map = mapRef.current;
-        if (!map) return;
-        if (userLocation) {
-            lastUserLocationTimeRef.current = Date.now();
-            map.invalidateSize();
-            map.setView([userLocation.lat, userLocation.lng], 14, { animate: false });
-            if (bottomPadding > 0) map.panBy([0, bottomPadding / 2], { animate: true, duration: 0.8 });
-        }
-    }, [userLocation, bottomPadding]);
+        if (!map || !userLocation) return;
+        lastUserLocationTimeRef.current = Date.now();
+        map.invalidateSize();
+        setTimeout(() => {
+            map.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
+        }, 300);
+    }, [userLocation]);
 
     useEffect(() => {
         if (!activePharmacy) return;

@@ -52,10 +52,6 @@ export default function HomeView({
     const translateAtDragStart = useRef(0);
     const velocityHistory = useRef<Array<{ t: number; y: number }>>([]);
 
-    const bottomPadding = useMemo(() => {
-        if (typeof window === "undefined") return 0;
-        return Math.max(0, window.innerHeight - translateY);
-    }, [translateY]);
 
     function zoomAllMaps() {
         desktopMapRef.current?.zoomToPharmacies();
@@ -285,7 +281,6 @@ export default function HomeView({
                             pharmacies={pharmacies}
                             userLocation={coordinates}
                             activePharmacy={activePharmacy}
-                            bottomPadding={bottomPadding}
                             onSelectPharmacy={setActivePharmacy}
                         />
                     </div>

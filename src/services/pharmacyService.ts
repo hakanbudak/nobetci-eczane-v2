@@ -48,7 +48,7 @@ export async function fetchOnDutyPharmacies(
 
     while (hasMore) {
         params.page = page;
-        const { data } = await api.get<PharmlushResponse>("/api/v1/duty-pharmacies/", { params });
+        const { data } = await api.get<PharmlushResponse>("/v1/duty-pharmacies/", { params });
         allItems.push(...data.results);
         hasMore = data.next !== null && page < 10;
         page++;
@@ -63,7 +63,7 @@ export async function fetchNearbyPharmacies(
     lng: number,
     radiusKm: number = 5
 ): Promise<Pharmacy[]> {
-    const { data } = await api.get<PharmlushDutyItem[]>("/api/v1/duty-pharmacies/nearby/", {
+    const { data } = await api.get<PharmlushDutyItem[]>("/v1/duty-pharmacies/nearby/", {
         params: { lat, lng, radius_km: radiusKm },
     });
 
