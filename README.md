@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💊 Nöbetçi Eczane
 
-## Getting Started
+Türkiye genelinde nöbetçi eczaneleri harita ve liste görünümünde gösteren, konum tabanlı modern web uygulaması.
 
-First, run the development server:
+## ✨ Özellikler
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 🗺️ **Harita Görünümü** — Leaflet tabanlı interaktif harita, eczane pin'leri ve popup bilgileri
+- 📍 **Konum Tabanlı** — Kullanıcı konumuna göre en yakın eczaneleri otomatik sıralama
+- 🔍 **Şehir & İlçe Filtresi** — 81 il ve tüm ilçelerde arama ve filtreleme
+- 📱 **Mobil Uyumlu** — Responsive tasarım, drag edilebilir bottom sheet
+- 🌙 **Dark Tema** — Modern koyu renk paleti
+- ⚡ **SEO Optimized** — SSG ile 816 statik sayfa (81 il + 731+ ilçe)
+- 🔐 **Güvenli API** — Server-side proxy ile API token koruması
+
+## 🛠️ Teknoloji Stack
+
+| Kategori | Teknoloji |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| UI | React 18 + TypeScript |
+| Styling | Tailwind CSS |
+| State | Zustand |
+| Server State | React Query |
+| HTTP | Axios |
+| Harita | Leaflet |
+| API | Pharmlush API |
+
+## 📁 Proje Yapısı
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # Ana sayfa
+│   ├── layout.tsx          # Root layout + metadata
+│   ├── v1/[...path]/       # API proxy route
+│   ├── [city]/nobetci/     # Şehir sayfaları (SSG)
+│   └── [city]/[district]/nobetci/  # İlçe sayfaları (SSG)
+├── components/
+│   ├── common/             # Providers, LocationPermissionModal
+│   ├── layout/             # Header
+│   ├── pharmacy/           # HomeView, PharmacyMap, PharmacyCard, PharmacyList
+│   └── location/           # CitySelector
+├── hooks/                  # usePharmacies, useGeolocation, useCities
+├── services/               # API client, pharmacyService
+├── store/                  # Zustand store
+├── types/                  # TypeScript interfaces
+├── data/                   # Şehir/ilçe verileri, koordinatlar
+└── utils/                  # distance, slug, reverseGeocode
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Kurulum
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Bağımlılıkları yükle
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# .env dosyasını oluştur
+cp .env.example .env
 
-## Learn More
+# Geliştirme sunucusunu başlat
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## ⚙️ Ortam Değişkenleri
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Değişken | Açıklama |
+|---|---|
+| `PHARMLUSH_API_TOKEN` | Pharmlush API Bearer token |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Build
 
-## Deploy on Vercel
+```bash
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+816 statik sayfa üretir (81 il + 731+ ilçe). Tüm sayfalar ISR ile otomatik güncellenir.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 Lisans
+
+MIT

@@ -74,7 +74,21 @@ export default function HomeView({
 
     useEffect(() => {
         if (pharmacies.length === 0 && !selectedCitySlug) {
-            setShowLocationModal(true);
+            if (typeof navigator !== "undefined" && navigator.permissions) {
+                navigator.permissions.query({ name: "geolocation" }).then((result) => {
+                    if (result.state === "granted") {
+                        handleLocationAllow();
+                    } else if (result.state === "denied") {
+                        usePharmacyStore.getState().setLocationStatus("denied");
+                    } else {
+                        setShowLocationModal(true);
+                    }
+                }).catch(() => {
+                    setShowLocationModal(true);
+                });
+            } else {
+                setShowLocationModal(true);
+            }
         } else if (pharmacies.length > 0) {
             requestLocation().then((coords) => {
                 if (coords) setPharmacies(sortByDistance(coords, pharmacies));
