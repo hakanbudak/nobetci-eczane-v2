@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface LocationPermissionModalProps {
     onAllow: () => void;
     onDeny: () => void;
@@ -9,34 +7,32 @@ interface LocationPermissionModalProps {
 
 export default function LocationPermissionModal({ onAllow, onDeny }: LocationPermissionModalProps) {
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 flex flex-col items-center text-center animate-in fade-in zoom-in duration-300">
-                <div className="mb-6">
-                    <Image
-                        src="/location-permission.png"
-                        alt="Konum izni"
-                        width={180}
-                        height={180}
-                        priority
-                    />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+            <div className="bg-dark-800 border border-dark-600/50 rounded-2xl shadow-2xl max-w-[340px] w-full p-6 flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20 flex items-center justify-center mb-5">
+                    <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                 </div>
 
-                <p className="text-slate-700 text-base leading-relaxed font-medium mb-8">
-                    Uygulamamız size en iyi hizmeti sağlamak için konum bilgilerinize erişmek istiyor. İzin veriyor musunuz?
+                <h3 className="text-dark-50 font-bold text-base mb-2">Konum Erişimi</h3>
+                <p className="text-dark-400 text-sm leading-relaxed mb-6">
+                    Size en yakın nöbetçi eczaneleri gösterebilmemiz için konum bilginize ihtiyacımız var.
                 </p>
 
-                <div className="flex gap-4 w-full">
+                <div className="flex gap-3 w-full">
                     <button
                         onClick={onAllow}
-                        className="flex-1 bg-[#1e3a5f] hover:bg-[#162d4a] text-white font-bold text-lg py-3.5 rounded-2xl transition-colors shadow-lg"
+                        className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm py-3 rounded-xl transition-colors shadow-lg shadow-primary-500/20"
                     >
-                        EVET
+                        İzin Ver
                     </button>
                     <button
                         onClick={onDeny}
-                        className="flex-1 bg-white hover:bg-slate-50 text-[#1e3a5f] font-bold text-lg py-3.5 rounded-2xl border-2 border-[#1e3a5f]/30 transition-colors"
+                        className="flex-1 bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-dark-200 font-semibold text-sm py-3 rounded-xl border border-dark-600/50 transition-colors"
                     >
-                        HAYIR
+                        Hayır
                     </button>
                 </div>
             </div>

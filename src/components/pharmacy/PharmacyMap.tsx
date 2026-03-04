@@ -162,9 +162,7 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
                 .bindPopup('<div style="padding: 8px; font-size: 11px; font-weight: 600; color: #60a5fa;">📍 Konumunuz</div>', { closeButton: false })
                 .addTo(map);
         }
-
-        fitBounds();
-    }, [pharmacies, userLocation, onSelectPharmacy, fitBounds]);
+    }, [pharmacies, userLocation, onSelectPharmacy]);
 
     const focusOnPharmacy = useCallback((pharmacy: Pharmacy) => {
         const map = mapRef.current;
