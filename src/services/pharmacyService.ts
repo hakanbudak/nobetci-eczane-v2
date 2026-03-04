@@ -1,52 +1,72 @@
 import api from "./api";
-import type { Pharmacy, PharmacyApiItem, PharmacyApiResponse } from "@/types/pharmacy";
+import type { Pharmacy, PharmlushDutyItem, PharmlushResponse } from "@/types/pharmacy";
 
-function mapApiItem(item: PharmacyApiItem): Pharmacy {
+function mapDutyItem(item: PharmlushDutyItem): Pharmacy {
+    const p = item.pharmacy;
     return {
-        name: item.name,
-        district: item.district?.name || "",
-        address: item.address,
-        phone: item.phone,
-        phone2: item.phone2,
+        name: p.name,
+        district: p.district || "",
+        address: p.address,
+        phone: p.phone,
+        phone2: null,
         location: {
-            lat: item.location?.latitude,
-            lng: item.location?.longitude,
+            lat: parseFloat(p.latitude) || 0,
+            lng: parseFloat(p.longitude) || 0,
         },
+        googleMapsUrl: p.google_maps_url,
+        neighborhood: p.neighborhood,
+        dutyNote: item.duty_note,
+        distance: p.distance_km ?? undefined,
     };
 }
 
-function deduplicateByPhone(items: PharmacyApiItem[]): PharmacyApiItem[] {
-    const phoneMap = new Map<string, PharmacyApiItem>();
+function deduplicateByPhone(items: PharmlushDutyItem[]): PharmlushDutyItem[] {
+    const phoneMap = new Map<string, PharmlushDutyItem>();
     for (const item of items) {
-        const key = item.phone?.replace(/[\s\-()]/g, "") || item.id;
+        const key = item.pharmacy.phone?.replace(/[\s\-()]/g, "") || String(item.pharmacy.id);
         const existing = phoneMap.get(key);
-        if (!existing || (item.address?.length || 0) > (existing.address?.length || 0)) {
+        if (!existing || (item.pharmacy.address?.length || 0) > (existing.pharmacy.address?.length || 0)) {
             phoneMap.set(key, item);
         }
     }
     return Array.from(phoneMap.values());
 }
 
-function extractTodayPharmacies(data: PharmacyApiResponse): PharmacyApiItem[] {
-    const groups = data.data || [];
-    const todayGroup = groups.find((g) => g.day === "Bugün") || groups[groups.length - 1];
-    return todayGroup?.pharmacies || [];
-}
-
 export async function fetchOnDutyPharmacies(
     citySlug: string,
     districtSlug?: string
 ): Promise<Pharmacy[]> {
-    const params: Record<string, string> = { city: citySlug };
+    const params: Record<string, string | number> = {
+        province: citySlug,
+        limit: 100,
+    };
     if (districtSlug) params.district = districtSlug;
 
-    const { data } = await api.get<PharmacyApiResponse>("/pharmacies/on-duty", { params });
+    const allItems: PharmlushDutyItem[] = [];
+    let page = 1;
+    let hasMore = true;
 
-    if (!data.success) {
-        throw new Error(data.error || "API başarısız yanıt döndü.");
+    while (hasMore) {
+        params.page = page;
+        const { data } = await api.get<PharmlushResponse>("/api/v1/duty-pharmacies/", { params });
+        allItems.push(...data.results);
+        hasMore = data.next !== null && page < 10;
+        page++;
     }
 
-    const raw = extractTodayPharmacies(data);
-    const deduped = deduplicateByPhone(raw);
-    return deduped.map(mapApiItem);
+    const deduped = deduplicateByPhone(allItems);
+    return deduped.map(mapDutyItem);
+}
+
+export async function fetchNearbyPharmacies(
+    lat: number,
+    lng: number,
+    radiusKm: number = 5
+): Promise<Pharmacy[]> {
+    const { data } = await api.get<PharmlushDutyItem[]>("/api/v1/duty-pharmacies/nearby/", {
+        params: { lat, lng, radius_km: radiusKm },
+    });
+
+    const deduped = deduplicateByPhone(data);
+    return deduped.map(mapDutyItem);
 }

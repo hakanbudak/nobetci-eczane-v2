@@ -11,47 +11,44 @@ export interface Pharmacy {
     phone2?: string | null;
     location: Coordinates;
     distance?: number;
+    googleMapsUrl?: string;
+    neighborhood?: string | null;
+    dutyNote?: string | null;
 }
 
-export interface PharmacyDayGroup {
-    day: string;
-    date: string;
-    count: number;
-    pharmacies: PharmacyApiItem[];
-}
-
-export interface PharmacyApiResponse {
-    success: boolean;
-    data: PharmacyDayGroup[];
-    error?: string;
-}
-
-export interface PharmacyApiItem {
-    id: string;
+export interface PharmlushPharmacy {
+    id: number;
     name: string;
     address: string;
     phone: string;
-    phone2: string | null;
-    location: {
-        latitude: number;
-        longitude: number;
-    };
-    city: {
-        id: string;
-        name: string;
+    province: string;
+    district: string;
+    neighborhood: string | null;
+    latitude: string;
+    longitude: string;
+    has_coordinates: boolean;
+    google_maps_url: string;
+    distance_km: number | null;
+}
+
+export interface PharmlushDutyItem {
+    id: number;
+    date: string;
+    duty_start_time: string | null;
+    duty_end_time: string | null;
+    duty_note: string | null;
+    pharmacy: PharmlushPharmacy;
+    source: {
+        chamber_name: string;
         slug: string;
     };
-    district: {
-        id: string;
-        name: string;
-        slug: string;
-    };
-    duty: {
-        date: string;
-        startTime: string | null;
-        endTime: string | null;
-        isVerified: boolean;
-    };
+}
+
+export interface PharmlushResponse {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: PharmlushDutyItem[];
 }
 
 export interface City {
