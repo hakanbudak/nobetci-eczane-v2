@@ -281,6 +281,7 @@ export default function HomeView({
                             pharmacies={pharmacies}
                             userLocation={coordinates}
                             activePharmacy={activePharmacy}
+                            mapCenterOffset={typeof window !== "undefined" ? Math.round((window.innerHeight * 0.55) / 2) : 0}
                             onSelectPharmacy={setActivePharmacy}
                         />
                     </div>

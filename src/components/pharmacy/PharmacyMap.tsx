@@ -10,6 +10,7 @@ interface PharmacyMapProps {
     userLocation: Coordinates | null;
     activePharmacy: Pharmacy | null;
     bottomPadding?: number;
+    mapCenterOffset?: number;
     onSelectPharmacy: (pharmacy: Pharmacy) => void;
 }
 
@@ -99,7 +100,7 @@ function createPopupContent(pharmacy: Pharmacy): string {
 }
 
 const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function PharmacyMap(
-    { pharmacies, userLocation, activePharmacy, bottomPadding = 0, onSelectPharmacy },
+    { pharmacies, userLocation, activePharmacy, bottomPadding = 0, mapCenterOffset = 0, onSelectPharmacy },
     ref
 ) {
     const mapContainer = useRef<HTMLDivElement>(null);
@@ -209,8 +210,13 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
         map.invalidateSize();
         setTimeout(() => {
             map.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
+            if (mapCenterOffset > 0) {
+                setTimeout(() => {
+                    map.panBy([0, mapCenterOffset], { animate: true, duration: 0.5 });
+                }, 400);
+            }
         }, 300);
-    }, [userLocation]);
+    }, [userLocation, mapCenterOffset]);
 
     useEffect(() => {
         if (!activePharmacy) return;
