@@ -440,7 +440,7 @@ export default function HomeView({
             </div>
 
             {/* SEO Bileşenleri EN ALTTA (Toggle ile) */}
-            <div className="shrink-0 bg-dark-900 border-t border-dark-800 relative z-[5] pb-16 lg:pb-0">
+            <div className="shrink-0 bg-dark-900 border-t border-dark-800 relative z-[5]">
                 {(selectedCitySlug || detectedCityName) && (
                     <div className="xl:container mx-auto">
                         <button
