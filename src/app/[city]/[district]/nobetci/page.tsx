@@ -9,23 +9,34 @@ interface DistrictPageProps {
     params: Promise<{ city: string; district: string }>;
 }
 
+import { citySlug, generateCanonicalUrl } from "@/utils/seoHelpers";
+
+export const revalidate = 43200; // 12 saatte bir sayfa statik olarak güncellenecek (ISR)
+
 export async function generateMetadata({ params }: DistrictPageProps): Promise<Metadata> {
-    const { city: citySlug, district: districtSlug } = await params;
-    const city = cities.find((c) => c.slug === citySlug) as City | undefined;
-    if (!city) return {};
-    const district = city.districts.find((d) => d.slug === districtSlug);
-    if (!district) return {};
+    const { city: cityParam, district: districtParam } = await params;
+    const city = cities.find((c) => c.slug === cityParam) as City | undefined;
+    if (!city) return { title: "Nöbetçi Eczane Bulunamadı" };
+
+    const district = city.districts.find((d) => d.slug === districtParam);
+    if (!district) return { title: "Nöbetçi Eczane Bulunamadı" };
+
+    const canonicalUrl = generateCanonicalUrl(`${city.slug}/${district.slug}/nobetci`);
 
     return {
-        title: `${district.name} (${city.name}) Nöbetçi Eczane — Bugün | Nöbetçi Eczane`,
-        description: `${city.name} ${district.name} ilçesinde bugün nöbetçi eczaneler. ${district.name} nöbetçi eczane listesini harita üzerinde görün.`,
+        title: `${district.name} Nöbetçi Eczaneleri — ${city.name} Bugün Açık Eczaneler | Nöbetçi Eczane`,
+        description: `Bugün ${city.name} ${district.name} ilçesindeki tüm nöbetçi eczaneler. ${district.name} nöbetçi eczane listesi, harita konumları ve telefon numaraları.`,
+        keywords: [`nöbetçi eczane ${district.name.toLowerCase()}`, `${district.name.toLowerCase()} nöbetçi eczane ${city.name.toLowerCase()}`, `bugün açık eczane ${district.name.toLowerCase()}`],
+        alternates: { canonical: canonicalUrl },
         openGraph: {
-            title: `${district.name} Nöbetçi Eczane — ${city.name}`,
-            description: `${district.name} nöbetçi eczanelerini harita üzerinde bulun.`,
+            title: `${district.name} Nöbetçi Eczaneleri - Haritalı Liste`,
+            description: `${city.name} ${district.name} güncel nöbetçi eczanelerini harita üzerinde bulun, nöbet çizelgelerine anında ulaşın.`,
+            url: canonicalUrl,
             type: "website",
+            locale: "tr_TR",
+            siteName: "Nöbetçi Eczane"
         },
-        twitter: { card: "summary" },
-        alternates: { canonical: `https://nobetcieczane.com/${citySlug}/${districtSlug}/nobetci` },
+        twitter: { card: "summary_large_image" },
     };
 }
 
@@ -38,6 +49,8 @@ export async function generateStaticParams() {
     }
     return params;
 }
+
+import { PharmacySchema } from "@/components/seo/PharmacySchema";
 
 export default async function DistrictPage({ params }: DistrictPageProps) {
     const { city: citySlug, district: districtSlug } = await params;
@@ -54,12 +67,15 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
     }
 
     return (
-        <HomeView
-            initialPharmacies={pharmacies}
-            initialCitySlug={citySlug}
-            initialCityName={city.name}
-            initialDistrictSlug={districtSlug}
-            initialDistrictName={district.name}
-        />
+        <>
+            <PharmacySchema pharmacies={pharmacies} cityName={city.name} districtName={district.name} />
+            <HomeView
+                initialPharmacies={pharmacies}
+                initialCitySlug={citySlug}
+                initialCityName={city.name}
+                initialDistrictSlug={districtSlug}
+                initialDistrictName={district.name}
+            />
+        </>
     );
 }

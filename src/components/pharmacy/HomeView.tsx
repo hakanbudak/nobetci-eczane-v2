@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import LocationPermissionModal from "@/components/common/LocationPermissionModal";
+import LocationBanner from "@/components/location/LocationBanner";
 import PharmacyList from "@/components/pharmacy/PharmacyList";
 import CitySelector from "@/components/location/CitySelector";
 import { usePharmacyStore } from "@/store/pharmacyStore";
@@ -13,6 +14,8 @@ import { findNearestCity } from "@/utils/reverseGeocode";
 import { calculateDistance } from "@/utils/distance";
 import type { Pharmacy, Coordinates } from "@/types/pharmacy";
 import type { PharmacyMapRef } from "./PharmacyMap";
+import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { CityContent } from "@/components/seo/CityContent";
 
 const PharmacyMap = dynamic(() => import("./PharmacyMap"), { ssr: false });
 
@@ -37,6 +40,7 @@ export default function HomeView({
     const [activePharmacy, setActivePharmacy] = useState<Pharmacy | null>(null);
     const [isListVisible, setIsListVisible] = useState(true);
     const [showLocationModal, setShowLocationModal] = useState(false);
+    const [isSeoVisible, setIsSeoVisible] = useState(false);
 
     const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
     const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
@@ -68,38 +72,82 @@ export default function HomeView({
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            setTranslateY(Math.round(window.innerHeight * 0.45));
+            try {
+                const permission = localStorage.getItem('locationPermission');
+                if (!permission) {
+                    setShowLocationModal(true);
+                }
+
+                // Sadece konum izni verildiyse (veya verildiği biliniyorsa) haritayı göster (yarı ekran)
+                if (permission === 'granted' || status === 'granted') {
+                    setTranslateY(Math.round(window.innerHeight * 0.45));
+                } else {
+                    setTranslateY(0); // Konum yoksa liste HER ZAMAN tam ekran kalsın
+                }
+            } catch {
+                setTranslateY(0);
+            }
+
+            // Masaüstünde varsayılan olarak açık, mobilde kapalı gelsin ki harita görünür kalsın.
+            if (window.innerWidth >= 1024) {
+                setIsSeoVisible(true);
+            }
         }
     }, []);
 
+    // Session Restore: Daha önce konum izni verildiyse sessizce konumu al ve (ana sayfadaysak) şehrin verilerini getir
     useEffect(() => {
-        if (pharmacies.length === 0 && !selectedCitySlug) {
-            if (typeof navigator !== "undefined" && navigator.permissions) {
-                navigator.permissions.query({ name: "geolocation" }).then((result) => {
-                    if (result.state === "granted") {
-                        handleLocationAllow();
-                    } else if (result.state === "denied") {
-                        usePharmacyStore.getState().setLocationStatus("denied");
-                    } else {
-                        setShowLocationModal(true);
-                    }
-                }).catch(() => {
-                    setShowLocationModal(true);
-                });
-            } else {
-                setShowLocationModal(true);
-            }
-        } else if (pharmacies.length > 0) {
+        if (typeof window !== "undefined") {
+            try {
+                const permission = localStorage.getItem('locationPermission');
+                if (permission === 'granted' && status === 'idle') {
+                    requestLocation().then((coords) => {
+                        if (coords) {
+                            // Sadece ana sayfadaysak otomatik şehir seçimi yap
+                            if (initialPharmacies.length === 0 && !initialCitySlug) {
+                                const nearest = findNearestCity(coords.lat, coords.lng);
+                                setDetectedCityName(nearest.name);
+                                setSelectedCitySlug(nearest.slug);
+                                setIsLoading(true);
+                                fetchOnDutyPharmacies(nearest.slug).then(data => {
+                                    setPharmacies(sortByDistance(coords, data));
+                                    setIsLoading(false);
+                                }).catch(() => setIsLoading(false));
+                            } else {
+                                // Özel bir şehir sayfasındaysak sadece mevcut eczaneleri mesafeye göre sırala
+                                setPharmacies(prev => sortByDistance(coords, prev));
+                            }
+                        }
+                    });
+                }
+            } catch { }
+        }
+        // eslint-disable-next-deps
+    }, []);
+
+    useEffect(() => {
+        // Otomatik konum istemek yerine mevcut konuma göre sadece mesafeleri sırala
+        if (pharmacies.length > 0 && status === "granted") {
             requestLocation().then((coords) => {
                 if (coords) setPharmacies(sortByDistance(coords, pharmacies));
             });
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleLocationAllow = useCallback(async () => {
         setShowLocationModal(false);
+
+        // Native tarayıcı iznini bekle (Kullanıcı bu esnada tarayıcının popup'ına cevap verecek)
         const coords = await requestLocation();
+
         if (coords) {
+            // Kullanıcı gerçekten tarayıcıdan izin verdiyse:
+            try { localStorage.setItem('locationPermission', 'granted'); } catch { }
+            if (typeof window !== "undefined") {
+                setTranslateY(Math.round(window.innerHeight * 0.45)); // Haritayı görünür kıl
+                setTimeout(() => mobileMapRef.current?.triggerResize(), 400); // Küçülünce harita boyutunu güncelle
+            }
+
             const nearest = findNearestCity(coords.lat, coords.lng);
             setDetectedCityName(nearest.name);
             setSelectedCitySlug(nearest.slug);
@@ -111,11 +159,29 @@ export default function HomeView({
                 setError("Eczane verileri yüklenemedi.");
             }
             setIsLoading(false);
+        } else {
+            // Kullanıcı custom modal'da 'İzin ver' deyip, tarayıcı native modal'ında 'Engelle' dediyse:
+            try { localStorage.setItem('locationPermission', 'denied'); } catch { }
+            if (typeof window !== "undefined") {
+                setTranslateY(0); // Listeyi tam ekranda tut (Harita hala default coords veya görünmez)
+            }
         }
     }, [requestLocation]);
 
+    const handleLocationRequest = useCallback(() => {
+        if (status === "granted") {
+            handleLocationAllow();
+        } else {
+            setShowLocationModal(true);
+        }
+    }, [status, handleLocationAllow]);
+
     const handleLocationDeny = useCallback(() => {
         setShowLocationModal(false);
+        try { localStorage.setItem('locationPermission', 'denied'); } catch { }
+        // Kullanıcı reddettiyse liste tam ekran kalmaya devam etmeli ki şehir seçeceğini anlasın
+        setTranslateY(0);
+
         usePharmacyStore.getState().setLocationStatus("denied");
     }, []);
 
@@ -161,13 +227,18 @@ export default function HomeView({
         setSelectedDistrictName("");
         setDetectedCityName("");
         setPharmacies([]);
+        setActivePharmacy(null);
     }, []);
 
-    function getMaxTranslate() {
-        return typeof window !== "undefined" ? window.innerHeight - 60 : 500;
-    }
+    const handleSelectPharmacy = useCallback((pharmacy: Pharmacy) => {
+        setActivePharmacy(pharmacy);
+        desktopMapRef.current?.focusOnPharmacy(pharmacy);
+        mobileMapRef.current?.focusOnPharmacy(pharmacy);
+    }, []);
 
-    function onHandlePointerDown(e: React.PointerEvent) {
+    const getMaxTranslate = () => typeof window !== "undefined" ? Math.round(window.innerHeight * 0.82) : 600;
+
+    function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
         setIsDragging(true);
         setIsAnimating(false);
         pointerStartY.current = e.clientY;
@@ -176,11 +247,16 @@ export default function HomeView({
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     }
 
-    function onHandlePointerMove(e: React.PointerEvent) {
+    function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
         if (!isDragging) return;
-        const delta = e.clientY - pointerStartY.current;
-        const raw = translateAtDragStart.current + delta;
-        setTranslateY(Math.max(0, Math.min(raw, getMaxTranslate())));
+        const deltaY = e.clientY - pointerStartY.current;
+        let newY = translateAtDragStart.current + deltaY;
+        const maxT = getMaxTranslate();
+        if (newY < 0) newY = newY * 0.2;
+        else if (newY > maxT) newY = maxT + (newY - maxT) * 0.2;
+
+        setTranslateY(newY);
+
         const now = Date.now();
         velocityHistory.current.push({ t: now, y: e.clientY });
         while (velocityHistory.current.length > 1 && now - velocityHistory.current[0].t > 80) {
@@ -188,11 +264,12 @@ export default function HomeView({
         }
     }
 
-    function onHandlePointerUp() {
+    function onPointerUp() {
         if (!isDragging) return;
         setIsDragging(false);
-        const vh = velocityHistory.current;
+
         let velocity = 0;
+        const vh = velocityHistory.current;
         if (vh.length >= 2) {
             const first = vh[0];
             const last = vh[vh.length - 1];
@@ -206,9 +283,10 @@ export default function HomeView({
         setTimeout(() => setIsAnimating(false), 420);
     }
 
-
     return (
         <div className="h-[100dvh] w-full overflow-hidden bg-dark-900 flex flex-col">
+            <LocationBanner status={status} onRequest={handleLocationRequest} />
+
             {showLocationModal && (
                 <LocationPermissionModal onAllow={handleLocationAllow} onDeny={handleLocationDeny} />
             )}
@@ -217,36 +295,30 @@ export default function HomeView({
                 pharmacyCount={pharmacies.length}
                 cityName={detectedCityName || selectedCitySlug}
             />
+
+
+
             <div className="flex-1 overflow-hidden">
                 {/* ═══════════ DESKTOP ═══════════ */}
                 <div className="hidden lg:flex h-full w-full">
                     <div className="relative flex-1 h-full min-w-0">
                         <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2 pointer-events-none">
-                            {(status === "idle" || status === "requesting") && (
-                                <div className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-dark-200 rounded-lg px-3 py-2 text-xs border border-dark-700/50 shadow-lg pointer-events-auto w-fit">
-                                    <svg className="w-3.5 h-3.5 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    Konum alınıyor...
-                                </div>
-                            )}
+
                             {status === "granted" && detectedCityName && (
                                 <div className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-dark-200 rounded-lg px-3 py-2 text-xs border border-primary-700/30 shadow-lg pointer-events-auto w-fit">
                                     <span className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
                                     <span>📍 {detectedCityName} · {pharmacies.length} eczane</span>
                                 </div>
                             )}
-                            {(status === "denied" || status === "unavailable") && (
+                            {(status === "idle" || status === "requesting" || status === "denied" || status === "unavailable") && (
                                 <button
-                                    onClick={handleLocationAllow}
-                                    className="inline-flex items-center gap-2 bg-dark-900/90 backdrop-blur-sm text-amber-400 hover:text-amber-300 rounded-lg px-3 py-2 text-xs border border-amber-700/30 hover:border-amber-600/50 shadow-lg pointer-events-auto w-fit cursor-pointer transition-colors"
+                                    onClick={handleLocationRequest}
+                                    className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[11px] font-semibold text-primary-300 hover:text-primary-200 cursor-pointer shadow-lg transition-colors border border-primary-500/20"
                                 >
                                     <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     </svg>
-                                    <span>Konum alınamadı · <strong>İzin Ver</strong></span>
+                                    <span>{status === "requesting" ? "Konum aranıyor..." : "Yakındaki Eczaneler"}</span>
                                 </button>
                             )}
                         </div>
@@ -302,7 +374,7 @@ export default function HomeView({
                                 </div>
                             )}
                             <div className="flex-1 overflow-y-auto p-4 min-h-0 overscroll-contain bg-dark-900">
-                                <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} />
+                                <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} onRequestLocation={handleLocationRequest} />
                             </div>
                         </div>
                     )}
@@ -331,10 +403,10 @@ export default function HomeView({
                         <div
                             className="shrink-0 flex justify-center items-center h-8 cursor-grab active:cursor-grabbing select-none"
                             style={{ touchAction: "none" }}
-                            onPointerDown={onHandlePointerDown}
-                            onPointerMove={onHandlePointerMove}
-                            onPointerUp={onHandlePointerUp}
-                            onPointerCancel={onHandlePointerUp}
+                            onPointerDown={onPointerDown}
+                            onPointerMove={onPointerMove}
+                            onPointerUp={onPointerUp}
+                            onPointerCancel={onPointerUp}
                         >
                             <div className={`w-10 h-1.5 rounded-full transition-colors duration-150 ${isDragging ? "bg-primary-400" : "bg-dark-600"}`} />
                         </div>
@@ -361,10 +433,42 @@ export default function HomeView({
                             </div>
                         )}
                         <div className="flex-1 overflow-y-auto p-4 min-h-0 overscroll-contain" style={{ touchAction: "pan-y" }}>
-                            <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} />
+                            <PharmacyList pharmacies={pharmacies} isLoading={isLoading} activePharmacy={activePharmacy} onSelect={setActivePharmacy} onRequestLocation={handleLocationRequest} />
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* SEO Bileşenleri EN ALTTA (Toggle ile) */}
+            <div className="shrink-0 bg-dark-900 border-t border-dark-800 relative z-[5] pb-16 lg:pb-0">
+                {(selectedCitySlug || detectedCityName) && (
+                    <div className="xl:container mx-auto">
+                        <button
+                            onClick={() => setIsSeoVisible(!isSeoVisible)}
+                            className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] lg:text-xs font-semibold text-dark-400 hover:text-dark-200 bg-dark-800/30 hover:bg-dark-800 transition-colors"
+                        >
+                            <span>{isSeoVisible ? "Şehir Bilgilerini Gizle (Haritayı Büyüt)" : "Şehir Hakkında SEO Bilgilerini Göster"}</span>
+                            <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${isSeoVisible ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isSeoVisible ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
+                            <div className="px-4 pb-4 lg:px-6 pt-2">
+                                <Breadcrumb
+                                    items={[
+                                        { name: detectedCityName || initialCityName || selectedCitySlug, path: `/${selectedCitySlug}/nobetci` },
+                                        ...(selectedDistrictSlug ? [{ name: selectedDistrictName || initialDistrictName || selectedDistrictSlug, path: `/${selectedCitySlug}/${selectedDistrictSlug}/nobetci` }] : [])
+                                    ]}
+                                />
+                                <div className="mt-3">
+                                    <CityContent
+                                        cityName={detectedCityName || initialCityName || selectedCitySlug}
+                                        districtName={selectedDistrictName || initialDistrictName || selectedDistrictSlug}
+                                        pharmacyCount={pharmacies.length}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

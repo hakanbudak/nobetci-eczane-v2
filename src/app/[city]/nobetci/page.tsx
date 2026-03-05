@@ -9,27 +9,40 @@ interface CityPageProps {
     params: Promise<{ city: string }>;
 }
 
+import { citySlug, generateCanonicalUrl } from "@/utils/seoHelpers";
+
+export const revalidate = 43200; // 12 saatte bir sayfa statik olarak güncellenecek (ISR)
+
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
-    const { city: citySlug } = await params;
-    const city = cities.find((c) => c.slug === citySlug);
-    if (!city) return {};
+    const { city: cityParam } = await params;
+    const city = cities.find((c) => c.slug === cityParam);
+
+    if (!city) return { title: "Nöbetçi Eczane Bulunamadı" };
+
+    const canonicalUrl = generateCanonicalUrl(`${city.slug}/nobetci`);
 
     return {
-        title: `${city.name} Nöbetçi Eczane — Bugün | Nöbetçi Eczane`,
-        description: `${city.name} ilinde bugün nöbetçi eczaneler. ${city.name} nöbetçi eczane listesini harita üzerinde görün, yol tarifi alın.`,
+        title: `${city.name} Nöbetçi Eczaneleri — Bugün Açık Eczaneler | Nöbetçi Eczane`,
+        description: `Bugün ${city.name} ilindeki tüm nöbetçi eczaneler. ${city.name} nöbetçi eczane listesi, harita konumları, yol tarifi ve telefon numaraları.`,
+        keywords: [`nöbetçi eczane ${city.name.toLowerCase()}`, `${city.name.toLowerCase()} eczane`, `bugün açık eczane ${city.name.toLowerCase()}`],
+        alternates: { canonical: canonicalUrl },
         openGraph: {
-            title: `${city.name} Nöbetçi Eczane`,
-            description: `${city.name} nöbetçi eczanelerini harita üzerinde bulun.`,
+            title: `${city.name} Nöbetçi Eczaneleri - Haritalı Liste`,
+            description: `${city.name} ilindeki güncel nöbetçi eczaneleri harita üzerinde bulun, nöbet çizelgelerine anında ulaşın.`,
+            url: canonicalUrl,
             type: "website",
+            locale: "tr_TR",
+            siteName: "Nöbetçi Eczane"
         },
-        twitter: { card: "summary" },
-        alternates: { canonical: `https://nobetcieczane.com/${citySlug}/nobetci` },
+        twitter: { card: "summary_large_image" },
     };
 }
 
 export async function generateStaticParams() {
     return cities.map((city) => ({ city: city.slug }));
 }
+
+import { PharmacySchema } from "@/components/seo/PharmacySchema";
 
 export default async function CityPage({ params }: CityPageProps) {
     const { city: citySlug } = await params;
@@ -44,10 +57,13 @@ export default async function CityPage({ params }: CityPageProps) {
     }
 
     return (
-        <HomeView
-            initialPharmacies={pharmacies}
-            initialCitySlug={citySlug}
-            initialCityName={city.name}
-        />
+        <>
+            <PharmacySchema pharmacies={pharmacies} cityName={city.name} />
+            <HomeView
+                initialPharmacies={pharmacies}
+                initialCitySlug={citySlug}
+                initialCityName={city.name}
+            />
+        </>
     );
 }

@@ -99,6 +99,17 @@ function createPopupContent(pharmacy: Pharmacy): string {
   `;
 }
 
+const defaultCoordinates: Record<string, { lat: number; lng: number }> = {
+    istanbul: { lat: 41.0082, lng: 28.9784 },
+    ankara: { lat: 39.9334, lng: 32.8597 },
+    izmir: { lat: 38.4192, lng: 27.1287 },
+    antalya: { lat: 36.8969, lng: 30.7133 },
+    bursa: { lat: 40.1824, lng: 29.0671 },
+    adana: { lat: 37.0000, lng: 35.3213 },
+    // Genel Türkiye merkezi fallback
+    default: { lat: 39.0, lng: 35.0 }
+};
+
 const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function PharmacyMap(
     { pharmacies, userLocation, activePharmacy, bottomPadding = 0, mapCenterOffset = 0, onSelectPharmacy },
     ref
@@ -112,8 +123,15 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
 
     const initMap = useCallback(() => {
         if (!mapContainer.current || mapRef.current) return;
+
+        // Kullanıcı konumu varsa onu, yoksa verilerdeki ilk eczaneyi, yoksa Türkiye merkezini al
+        const initialLocation = userLocation ||
+            (pharmacies.length > 0 && pharmacies[0].location.lat ? pharmacies[0].location : null) ||
+            defaultCoordinates.default;
+
         const map = L.map(mapContainer.current, { zoomControl: false, attributionControl: false })
-            .setView([39.925, 32.866], 6);
+            .setView([initialLocation.lat, initialLocation.lng], 6);
+
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
         L.control.zoom({ position: "bottomright" }).addTo(map);
         L.control.attribution({ position: "bottomleft" }).addAttribution('© <a href="https://openstreetmap.org">OSM</a>').addTo(map);
@@ -202,19 +220,51 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
     }, [updateMarkers]);
 
     useEffect(() => {
-        const map = mapRef.current;
-        if (!map || !userLocation) return;
-        lastUserLocationTimeRef.current = Date.now();
-        map.invalidateSize();
-        setTimeout(() => {
-            map.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
-            if (mapCenterOffset > 0) {
-                setTimeout(() => {
-                    map.panBy([0, mapCenterOffset], { animate: true, duration: 0.5 });
-                }, 400);
+        if (!mapRef.current) return;
+
+        // Eczane varsa fitBounds ile sınırları otomatik yap.
+        if (pharmacies.length > 0) {
+            fitBounds();
+        } else {
+            // Hiç konum ya da eczane yoksa view'ı koru, konum gelirse oraya kay.
+            if (userLocation) {
+                lastUserLocationTimeRef.current = Date.now();
+                try {
+                    mapRef.current.invalidateSize();
+                } catch (e) {
+                    console.warn("Map invalidateSize failed:", e);
+                }
+
+                let panTimer: NodeJS.Timeout;
+                const viewTimer = setTimeout(() => {
+                    const currentMap = mapRef.current;
+                    if (!currentMap) return;
+
+                    try {
+                        currentMap.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
+                        if (mapCenterOffset > 0) {
+                            panTimer = setTimeout(() => {
+                                const activeMap = mapRef.current;
+                                if (!activeMap) return;
+                                try {
+                                    activeMap.panBy([0, mapCenterOffset], { animate: true, duration: 0.5 });
+                                } catch (e) {
+                                    // Ignored map destroyed error
+                                }
+                            }, 400);
+                        }
+                    } catch (err) {
+                        // Ignored if map is destroyed
+                    }
+                }, 300);
+
+                return () => {
+                    clearTimeout(viewTimer);
+                    if (panTimer) clearTimeout(panTimer);
+                };
             }
-        }, 300);
-    }, [userLocation, mapCenterOffset]);
+        }
+    }, [userLocation, mapCenterOffset, pharmacies, fitBounds]);
 
     useEffect(() => {
         if (!activePharmacy) return;

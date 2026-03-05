@@ -8,9 +8,10 @@ interface PharmacyListProps {
     isLoading: boolean;
     activePharmacy: Pharmacy | null;
     onSelect: (pharmacy: Pharmacy) => void;
+    onRequestLocation?: () => void;
 }
 
-export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect }: PharmacyListProps) {
+export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation }: PharmacyListProps) {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
@@ -35,12 +36,28 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
 
     if (pharmacies.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-16 h-16 bg-dark-800 rounded-2xl flex items-center justify-center mb-4 border border-dark-700/50">
-                    <span className="text-2xl">💊</span>
+            <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
+                <div className="w-20 h-20 bg-primary-500/10 rounded-2xl flex items-center justify-center mb-6 border border-primary-500/20 shadow-[0_0_30px_rgba(239,68,68,0.15)] relative">
+                    <span className="text-4xl relative z-10 animate-bounce">📍</span>
+                    <div className="absolute inset-0 bg-primary-500/20 rounded-2xl animate-ping opacity-75" style={{ animationDuration: '3s' }}></div>
                 </div>
-                <p className="text-sm font-medium text-dark-300 mb-1">Nöbetçi eczane bulunamadı</p>
-                <p className="text-xs text-dark-500">Konumunuz alındığında en yakın eczaneler burada görünecek.</p>
+                <h3 className="text-xl font-bold text-dark-100 mb-2">Sana En Yakın Nöbetçi Eczaneler</h3>
+                <p className="text-sm md:text-base text-dark-400 mb-8 max-w-[300px]">
+                    Acil nöbetçi eczaneleri görmek için konum erişimine izin verin veya yukarıdan şehrinizi seçin.
+                </p>
+
+                {onRequestLocation && (
+                    <button
+                        onClick={onRequestLocation}
+                        className="w-full max-w-[280px] cursor-pointer flex items-center justify-center gap-2.5 bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3.5 px-6 rounded-xl transition-all active:scale-[0.98] shadow-[0_4px_20px_rgba(239,68,68,0.3)] hover:shadow-[0_4px_25px_rgba(239,68,68,0.4)]"
+                    >
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Konumumu Kullanarak Bul</span>
+                    </button>
+                )}
             </div>
         );
     }
