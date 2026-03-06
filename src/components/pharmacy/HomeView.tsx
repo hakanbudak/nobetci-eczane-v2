@@ -39,6 +39,7 @@ export default function HomeView({
     const [activePharmacy, setActivePharmacy] = useState<Pharmacy | null>(null);
     const [isListVisible, setIsListVisible] = useState(true);
     const [isSeoVisible, setIsSeoVisible] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
     const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
@@ -94,6 +95,7 @@ export default function HomeView({
     }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
+        setIsMounted(true);
         if (typeof window !== "undefined") {
             setTranslateY(Math.round(window.innerHeight * 0.85 - 200));
         }
@@ -350,9 +352,9 @@ export default function HomeView({
                     <div
                         className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
                         style={{
-                            height: typeof window !== "undefined" ? Math.max(300, window.innerHeight * 0.85) : "85dvh",
+                            height: isMounted && typeof window !== "undefined" ? Math.max(300, window.innerHeight * 0.85) : "85dvh",
                             transform: `translateY(${translateY}px)`,
-                            transition: isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+                            transition: isMounted && isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
                         }}
                     >
                         <div
