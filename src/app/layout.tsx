@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://eczanebul.co"),
   title: "Nöbetçi Eczane — Bugün Nöbetçi Eczaneler",
   description:
-    "Türkiye genelinde bugün nöbetçi eczaneleri harita üzerinde bulun, yol tarifi alın. 81 il, tüm ilçeler.",
+    "Türkiye genelinde bugün nöbetçi eczaneleri harita üzerinde bulun, yol tarifi alın. 81 ilde güncel listeye anında ulaşın.",
   alternates: {
     canonical: "https://eczanebul.co",
   },
@@ -42,6 +42,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

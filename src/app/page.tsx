@@ -8,7 +8,7 @@ export const revalidate = 43200;
 
 export const metadata: Metadata = {
   title: "Nöbetçi Eczane Haritası — En Yakın Nöbetçi Eczaneler",
-  description: "Türkiye'nin her yerinden en güncel nöbetçi eczane listesi. Harita üzerinden nöbetçi eczaneleri bulun, yol tarifi alın ve iletişim bilgilerine anında erişin.",
+  description: "Türkiye'nin her yerinden güncel nöbetçi eczane listesi. Harita üzerinden nöbetçi eczaneleri bulun ve yol tarifi alın.",
   keywords: ["nöbetçi eczane", "en yakın nöbetçi eczane", "nöbetçi eczane haritası", "gece açık eczane", "nöbetçi eczaneler"],
   alternates: {
     canonical: generateCanonicalUrl("/"),
