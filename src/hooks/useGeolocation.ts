@@ -38,17 +38,5 @@ export function useGeolocation() {
         });
     }, [setCoordinates, setLocationStatus]);
 
-    // Uygulama ilk açıldığında daha önceden onay verildiyse sessizce konumu hemen al
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                const permission = localStorage.getItem("locationPermission");
-                if (permission === "granted") {
-                    requestLocation(true); // sessiz mod
-                }
-            } catch { }
-        }
-    }, [requestLocation]);
-
     return { coordinates, status, requestLocation };
 }

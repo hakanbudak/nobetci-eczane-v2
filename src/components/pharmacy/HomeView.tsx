@@ -61,9 +61,12 @@ export default function HomeView({
             const permissionStatus = localStorage.getItem("locationPermission");
             if (!permissionStatus) {
                 setShowLocationModal(true);
+            } else if (permissionStatus === "granted" && status !== "granted") {
+                // Önceden izin verildiyse sayfa yenilendiğinde (F5) eczaneleri sessizce çek
+                handleLocationRequest(true);
             }
         }
-    }, []);
+    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Mobil harita offset hesabı doğrudan renderda translateY'den alınacak
     const pointerStartY = useRef(0);
@@ -97,8 +100,8 @@ export default function HomeView({
         }
     }, []);
 
-    const handleLocationRequest = useCallback(async () => {
-        const coords = await requestLocation();
+    const handleLocationRequest = useCallback(async (silent = false) => {
+        const coords = await requestLocation(silent);
         if (coords) {
             setTranslateY(typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85 - 200) : 0);
             setTimeout(() => mobileMapRef.current?.triggerResize(), 400);
@@ -106,14 +109,14 @@ export default function HomeView({
             const nearest = findNearestCity(coords.lat, coords.lng);
             setDetectedCityName(nearest.name);
             setSelectedCitySlug(nearest.slug);
-            setIsLoading(true);
+            if (!silent) setIsLoading(true);
             try {
                 const data = await fetchOnDutyPharmacies(nearest.slug);
                 setPharmacies(sortByDistance(coords, data));
             } catch {
-                setError("Eczane verileri yüklenemedi.");
+                if (!silent) setError("Eczane verileri yüklenemedi.");
             }
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     }, [requestLocation]);
 
