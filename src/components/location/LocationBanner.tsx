@@ -18,12 +18,15 @@ export default function LocationBanner({ status, onRequest }: LocationBannerProp
             const hasSeen = localStorage.getItem("nobetci_location_banner_seen");
             const permission = localStorage.getItem("locationPermission");
 
-            // Eğer daha önceden reddettiyse, X'e bastıysa veya zaten izinliyse gösterme
-            if (!hasSeen && status !== "granted" && status !== "denied" && permission !== "granted" && permission !== "denied") {
-                // Hafif bir gecikme ekleyerek sayfa yüklenir yüklenmez patlamasını engelle
-                const timer = setTimeout(() => setIsVisible(true), 1500);
-                return () => clearTimeout(timer);
+            // Eğer daha önceden izni REDDETTİYSE, X'E BASTIYSA veya ZATEN İZİNLİYSE gösterme!
+            if (permission === "granted" || permission === "denied" || status === "granted" || status === "denied" || hasSeen) {
+                setIsVisible(false);
+                return;
             }
+
+            // Hafif bir gecikme ekleyerek sayfa yüklenir yüklenmez patlamasını engelle
+            const timer = setTimeout(() => setIsVisible(true), 2500);
+            return () => clearTimeout(timer);
         } catch {
             // localStorage engellenmişse / hata verdiyse 
         }

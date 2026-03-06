@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { usePharmacyStore } from "@/store/pharmacyStore";
 import type { Coordinates, LocationStatus } from "@/types/pharmacy";
 
@@ -10,13 +10,13 @@ export function useGeolocation() {
     const coordinates = usePharmacyStore((s) => s.coordinates);
     const status = usePharmacyStore((s) => s.locationStatus);
 
-    const requestLocation = useCallback((): Promise<Coordinates | null> => {
+    const requestLocation = useCallback(async (silent = false): Promise<Coordinates | null> => {
         if (typeof window === "undefined" || !navigator.geolocation) {
             setLocationStatus("unavailable");
-            return Promise.resolve(null);
+            return null;
         }
 
-        setLocationStatus("requesting");
+        if (!silent) setLocationStatus("requesting");
 
         return new Promise((resolve) => {
             navigator.geolocation.getCurrentPosition(
@@ -37,6 +37,18 @@ export function useGeolocation() {
             );
         });
     }, [setCoordinates, setLocationStatus]);
+
+    // Uygulama ilk açıldığında daha önceden onay verildiyse sessizce konumu hemen al
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const permission = localStorage.getItem("locationPermission");
+                if (permission === "granted") {
+                    requestLocation(true); // sessiz mod
+                }
+            } catch { }
+        }
+    }, [requestLocation]);
 
     return { coordinates, status, requestLocation };
 }
