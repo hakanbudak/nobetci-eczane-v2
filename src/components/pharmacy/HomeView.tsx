@@ -14,8 +14,7 @@ import { findNearestCity } from "@/utils/reverseGeocode";
 import { calculateDistance } from "@/utils/distance";
 import type { Pharmacy, Coordinates } from "@/types/pharmacy";
 import type { PharmacyMapRef } from "./PharmacyMap";
-import { Breadcrumb } from "@/components/seo/Breadcrumb";
-import { CityContent } from "@/components/seo/CityContent";
+import SeoFooterMessage from "@/components/seo/SeoFooterMessage";
 
 const PharmacyMap = dynamic(() => import("./PharmacyMap"), { ssr: false });
 
@@ -388,36 +387,29 @@ export default function HomeView({
                 </div>
             </div>
 
-            {/* SEO Bileşenleri EN ALTTA (Toggle ile) */}
+            {/* SEO Bileşenleri EN ALTTA (SeoFooterMessage) */}
             <div className="shrink-0 bg-dark-900 border-t border-dark-800 relative z-[5]">
-                {(selectedCitySlug || detectedCityName) && (
-                    <div className="xl:container mx-auto">
-                        <button
-                            onClick={() => setIsSeoVisible(!isSeoVisible)}
-                            className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] lg:text-xs font-semibold text-dark-400 hover:text-dark-200 bg-dark-800/30 hover:bg-dark-800 transition-colors"
-                        >
-                            <span>{isSeoVisible ? "Şehir Bilgilerini Gizle (Haritayı Büyüt)" : "Şehir Hakkında SEO Bilgilerini Göster"}</span>
-                            <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${isSeoVisible ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isSeoVisible ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
-                            <div className="px-4 pb-4 lg:px-6 pt-2">
-                                <Breadcrumb
-                                    items={[
-                                        { name: detectedCityName || initialCityName || selectedCitySlug, path: `/${selectedCitySlug}/nobetci` },
-                                        ...(selectedDistrictSlug ? [{ name: selectedDistrictName || initialDistrictName || selectedDistrictSlug, path: `/${selectedCitySlug}/${selectedDistrictSlug}/nobetci` }] : [])
-                                    ]}
-                                />
-                                <div className="mt-3">
-                                    <CityContent
-                                        cityName={detectedCityName || initialCityName || selectedCitySlug}
-                                        districtName={selectedDistrictName || initialDistrictName || selectedDistrictSlug}
-                                        pharmacyCount={pharmacies.length}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <div className="xl:container mx-auto">
+                    <button
+                        onClick={() => setIsSeoVisible(!isSeoVisible)}
+                        className="w-full py-2.5 flex items-center justify-center gap-2 text-[11px] lg:text-xs font-semibold text-dark-400 hover:text-dark-200 bg-dark-800/30 hover:bg-dark-800 transition-colors"
+                    >
+                        <span>{isSeoVisible ? "Şehir Bilgilerini Gizle" : "Şehir Hakkında SEO Bilgilerini Göster"}</span>
+                        <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${isSeoVisible ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isSeoVisible ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
+                    <SeoFooterMessage
+                        cityName={detectedCityName || initialCityName || selectedCitySlug}
+                        districtName={selectedDistrictName || initialDistrictName || selectedDistrictSlug}
+                        pharmacyCount={pharmacies.length}
+                        selectedCitySlug={selectedCitySlug}
+                        selectedDistrictSlug={selectedDistrictSlug}
+                    />
+                </div>
             </div>
         </div>
     );

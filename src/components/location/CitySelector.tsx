@@ -119,7 +119,7 @@ export default function CitySelector({
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     type="text"
                                     placeholder={selectedCityData ? "İlçe ara..." : "Şehir ara..."}
-                                    className="flex-1 min-w-0 text-black text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none placeholder:text-slate-500"
+                                    className="flex-1 min-w-0 text-dark-900 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-base md:text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none placeholder:text-slate-500"
                                 />
                                 {selectedCityData && (
                                     <button onClick={clearSelection} className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-1">

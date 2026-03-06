@@ -13,6 +13,6 @@ export const citySlug = (name: string): string => {
 };
 
 export const generateCanonicalUrl = (path: string): string => {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nobetcieczane.com';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://eczanebul.co';
     return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 };
