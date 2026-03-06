@@ -22,7 +22,7 @@ export default function SeoFooterMessage({
         : `${displayCity} Nöbetçi Eczaneleri`;
 
     return (
-        <div className="w-full bg-dark-950 border-t border-dark-800 text-dark-300 py-10 px-4 mt-0 shrink-0 max-h-[75vh] md:max-h-none overflow-y-auto overscroll-contain">
+        <div className="w-full bg-dark-950 border-t border-dark-800 text-dark-300 py-10 px-4 mt-0 shrink-0 max-h-[75vh] md:max-h-[80vh] overflow-y-auto">
             <div className="max-w-4xl mx-auto space-y-8 text-sm leading-relaxed">
                 <header>
                     <h1 className="text-xl md:text-3xl font-black text-dark-100 mb-6 tracking-tight">
