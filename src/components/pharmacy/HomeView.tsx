@@ -54,9 +54,18 @@ export default function HomeView({
     const [isAnimating, setIsAnimating] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Mobil harita center offset hesaplamasını state'e taşı
-    const [mobileMapCenterOffset, setMobileMapCenterOffset] = useState(0);
+    const [showLocationModal, setShowLocationModal] = useState(false);
 
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const permissionStatus = localStorage.getItem("locationPermission");
+            if (!permissionStatus) {
+                setShowLocationModal(true);
+            }
+        }
+    }, []);
+
+    // Mobil harita offset hesabı doğrudan renderda translateY'den alınacak
     const pointerStartY = useRef(0);
     const translateAtDragStart = useRef(0);
     const velocityHistory = useRef<Array<{ t: number; y: number }>>([]);
@@ -84,14 +93,14 @@ export default function HomeView({
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            setMobileMapCenterOffset(Math.round((window.innerHeight * 0.55) / 2));
+            setTranslateY(Math.round(window.innerHeight * 0.85 - 200));
         }
     }, []);
 
     const handleLocationRequest = useCallback(async () => {
         const coords = await requestLocation();
         if (coords) {
-            setTranslateY(typeof window !== "undefined" ? Math.round(window.innerHeight * 0.45) : 0);
+            setTranslateY(typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85 - 200) : 0);
             setTimeout(() => mobileMapRef.current?.triggerResize(), 400);
 
             const nearest = findNearestCity(coords.lat, coords.lng);
@@ -144,6 +153,21 @@ export default function HomeView({
         }
     }, [selectedCitySlug, coordinates]);
 
+    const handleInitialLocationAllow = useCallback(() => {
+        setShowLocationModal(false);
+        try {
+            localStorage.setItem("locationPermission", "granted");
+        } catch { }
+        handleLocationRequest(); // doğrudan tetikle
+    }, [handleLocationRequest]);
+
+    const handleInitialLocationDeny = useCallback(() => {
+        setShowLocationModal(false);
+        try {
+            localStorage.setItem("locationPermission", "denied");
+        } catch { }
+    }, []);
+
     const handleCityClear = useCallback(() => {
         setSelectedCitySlug("");
         setSelectedDistrictSlug("");
@@ -159,7 +183,7 @@ export default function HomeView({
         mobileMapRef.current?.focusOnPharmacy(pharmacy);
     }, []);
 
-    const getMaxTranslate = () => typeof window !== "undefined" ? Math.round(window.innerHeight * 0.82) : 600;
+    const getMaxTranslate = () => typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85 - 120) : 600;
 
     function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
         setIsDragging(true);
@@ -200,7 +224,7 @@ export default function HomeView({
             if (dt > 0) velocity = (last.y - first.y) / dt;
         }
         const momentum = velocity * 150;
-        const target = Math.max(0, Math.min(translateY + momentum, getMaxTranslate()));
+        const target = Math.max(60, Math.min(translateY + momentum, getMaxTranslate()));
         setIsAnimating(true);
         setTranslateY(target);
         setTimeout(() => setIsAnimating(false), 420);
@@ -208,11 +232,21 @@ export default function HomeView({
 
     return (
         <div className="h-[100dvh] w-full overflow-hidden bg-dark-900 flex flex-col">
+            {showLocationModal && (
+                <LocationPermissionModal onAllow={handleInitialLocationAllow} onDeny={handleInitialLocationDeny} />
+            )}
             <LocationBanner status={status} onRequest={handleLocationRequest} />
             <Header
                 locationStatus={status}
                 pharmacyCount={pharmacies.length}
                 cityName={detectedCityName || selectedCitySlug}
+                citySelectorProps={{
+                    selectedCity: selectedCitySlug,
+                    selectedDistrict: selectedDistrictName,
+                    onCityChange: handleCityChange,
+                    onDistrictChange: handleDistrictChange,
+                    onClear: handleCityClear,
+                }}
             />
 
 
@@ -307,14 +341,14 @@ export default function HomeView({
                             pharmacies={pharmacies}
                             userLocation={coordinates}
                             activePharmacy={activePharmacy}
-                            mapCenterOffset={mobileMapCenterOffset}
+                            mapCenterOffset={typeof window !== "undefined" ? Math.round((window.innerHeight * 0.85 - translateY) / 2) : 130}
                             onSelectPharmacy={setActivePharmacy}
                         />
                     </div>
                     <div
                         className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
                         style={{
-                            height: "93dvh",
+                            height: typeof window !== "undefined" ? Math.max(300, window.innerHeight * 0.85) : "85dvh",
                             transform: `translateY(${translateY}px)`,
                             transition: isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
                         }}
@@ -329,7 +363,7 @@ export default function HomeView({
                         >
                             <div className={`w-10 h-1.5 rounded-full transition-colors duration-150 ${isDragging ? "bg-primary-400" : "bg-dark-600"}`} />
                         </div>
-                        <div className="shrink-0 px-4 pb-3 border-b border-dark-700/50 space-y-3">
+                        <div className="shrink-0 px-4 pb-3 border-b border-dark-700/50">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-sm font-bold text-dark-100 truncate pr-2">
                                     {detectedCityName ? `${detectedCityName} Nöbetçi Eczaneler` : "Nöbetçi Eczaneler"}
@@ -338,13 +372,6 @@ export default function HomeView({
                                     <span className="text-xs text-dark-500 font-medium whitespace-nowrap">{pharmacies.length} sonuç</span>
                                 )}
                             </div>
-                            <CitySelector
-                                selectedCity={selectedCitySlug}
-                                selectedDistrict={selectedDistrictName}
-                                onCityChange={handleCityChange}
-                                onDistrictChange={handleDistrictChange}
-                                onClear={handleCityClear}
-                            />
                         </div>
                         {error && (
                             <div className="mx-4 mt-3 bg-red-950/50 text-red-400 text-xs rounded-lg px-4 py-3 border border-red-800/30 shrink-0">

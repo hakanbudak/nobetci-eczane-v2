@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import HomeView from "@/components/pharmacy/HomeView";
-import LocationDetector from "@/components/common/LocationDetector";
 import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
 import { PharmacySchema } from "@/components/seo/PharmacySchema";
 import { generateCanonicalUrl } from "@/utils/seoHelpers";
@@ -35,7 +34,6 @@ export default async function HomePage() {
     <>
       <PharmacySchema pharmacies={pharmacies} cityName="İstanbul" />
       <HomeView initialPharmacies={pharmacies} initialCitySlug="istanbul" initialCityName="İstanbul" />
-      <LocationDetector />
     </>
   );
 }

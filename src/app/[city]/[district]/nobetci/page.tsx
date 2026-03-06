@@ -77,7 +77,6 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
                 initialDistrictSlug={districtSlug}
                 initialDistrictName={district.name}
             />
-            <LocationDetector />
         </>
     );
 }

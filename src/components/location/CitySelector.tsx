@@ -10,6 +10,7 @@ interface CitySelectorProps {
     onCityChange: (cityName: string, citySlug: string) => void;
     onDistrictChange: (districtName: string, districtSlug: string) => void;
     onClear: () => void;
+    variant?: "default" | "header";
 }
 
 export default function CitySelector({
@@ -18,6 +19,7 @@ export default function CitySelector({
     onCityChange,
     onDistrictChange,
     onClear,
+    variant = "default",
 }: CitySelectorProps) {
     const { allCities, searchCities, getCityBySlug } = useCities();
     const [searchQuery, setSearchQuery] = useState("");
@@ -71,18 +73,29 @@ export default function CitySelector({
     }
 
     return (
-        <div className="relative">
+        <div className={`relative ${variant === "header" ? "w-full" : ""}`}>
             <button
                 onClick={toggleOpen}
-                className="w-full flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-left hover:border-emerald-300 transition-colors shadow-sm"
+                className={`w-full flex items-center text-left transition-colors shadow-sm ${variant === "header"
+                        ? "bg-dark-800 border border-dark-600 rounded-lg px-2.5 py-1.5 hover:border-primary-500 gap-2"
+                        : "bg-white border border-slate-200 rounded-2xl px-4 py-3 hover:border-emerald-300 gap-3"
+                    }`}
             >
-                <svg className="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className={`flex-1 text-sm ${selectedCityData ? "text-slate-800 font-medium" : "text-slate-400"}`}>
+                {variant !== "header" && (
+                    <svg className="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                )}
+                {variant === "header" && (
+                    <svg className="w-3.5 h-3.5 text-primary-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                )}
+                <span className={`flex-1 truncate ${variant === "header" ? "text-xs" : "text-sm"
+                    } ${selectedCityData ? (variant === "header" ? "text-dark-100 font-medium" : "text-slate-800 font-medium") : (variant === "header" ? "text-dark-400" : "text-slate-400")}`}>
                     {selectedCityData ? selectedCityData.name : "Şehir seçin..."}
-                    {selectedDistrict && <span className="text-slate-400 font-normal"> / {selectedDistrict}</span>}
+                    {selectedDistrict && <span className={variant === "header" ? "text-dark-400 font-normal" : "text-slate-400 font-normal"}> / {selectedDistrict}</span>}
                 </span>
                 <svg
                     className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
