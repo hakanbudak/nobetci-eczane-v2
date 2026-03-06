@@ -51,6 +51,7 @@ export async function generateStaticParams() {
 }
 
 import { PharmacySchema } from "@/components/seo/PharmacySchema";
+import LocationDetector from "@/components/common/LocationDetector";
 
 export default async function DistrictPage({ params }: DistrictPageProps) {
     const { city: citySlug, district: districtSlug } = await params;
@@ -76,6 +77,7 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
                 initialDistrictSlug={districtSlug}
                 initialDistrictName={district.name}
             />
+            <LocationDetector />
         </>
     );
 }

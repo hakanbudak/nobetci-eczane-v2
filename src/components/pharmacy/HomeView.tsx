@@ -39,7 +39,6 @@ export default function HomeView({
     const [error, setError] = useState<string | null>(null);
     const [activePharmacy, setActivePharmacy] = useState<Pharmacy | null>(null);
     const [isListVisible, setIsListVisible] = useState(true);
-    const [showLocationModal, setShowLocationModal] = useState(false);
     const [isSeoVisible, setIsSeoVisible] = useState(false);
 
     const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
@@ -54,6 +53,7 @@ export default function HomeView({
     const [translateY, setTranslateY] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+
     const pointerStartY = useRef(0);
     const translateAtDragStart = useRef(0);
     const velocityHistory = useRef<Array<{ t: number; y: number }>>([]);
@@ -71,61 +71,6 @@ export default function HomeView({
     }
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                const permission = localStorage.getItem('locationPermission');
-                if (!permission) {
-                    setShowLocationModal(true);
-                }
-
-                // Sadece konum izni verildiyse (veya verildiği biliniyorsa) haritayı göster (yarı ekran)
-                if (permission === 'granted' || status === 'granted') {
-                    setTranslateY(Math.round(window.innerHeight * 0.45));
-                } else {
-                    setTranslateY(0); // Konum yoksa liste HER ZAMAN tam ekran kalsın
-                }
-            } catch {
-                setTranslateY(0);
-            }
-
-            // Masaüstünde varsayılan olarak açık, mobilde kapalı gelsin ki harita görünür kalsın.
-            if (window.innerWidth >= 1024) {
-                setIsSeoVisible(true);
-            }
-        }
-    }, []);
-
-    // Session Restore: Daha önce konum izni verildiyse sessizce konumu al ve (ana sayfadaysak) şehrin verilerini getir
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                const permission = localStorage.getItem('locationPermission');
-                if (permission === 'granted' && status === 'idle') {
-                    requestLocation().then((coords) => {
-                        if (coords) {
-                            // Sadece ana sayfadaysak otomatik şehir seçimi yap
-                            if (initialPharmacies.length === 0 && !initialCitySlug) {
-                                const nearest = findNearestCity(coords.lat, coords.lng);
-                                setDetectedCityName(nearest.name);
-                                setSelectedCitySlug(nearest.slug);
-                                setIsLoading(true);
-                                fetchOnDutyPharmacies(nearest.slug).then(data => {
-                                    setPharmacies(sortByDistance(coords, data));
-                                    setIsLoading(false);
-                                }).catch(() => setIsLoading(false));
-                            } else {
-                                // Özel bir şehir sayfasındaysak sadece mevcut eczaneleri mesafeye göre sırala
-                                setPharmacies(prev => sortByDistance(coords, prev));
-                            }
-                        }
-                    });
-                }
-            } catch { }
-        }
-        // eslint-disable-next-deps
-    }, []);
-
-    useEffect(() => {
         // Otomatik konum istemek yerine mevcut konuma göre sadece mesafeleri sırala
         if (pharmacies.length > 0 && status === "granted") {
             requestLocation().then((coords) => {
@@ -134,19 +79,11 @@ export default function HomeView({
         }
     }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleLocationAllow = useCallback(async () => {
-        setShowLocationModal(false);
-
-        // Native tarayıcı iznini bekle (Kullanıcı bu esnada tarayıcının popup'ına cevap verecek)
+    const handleLocationRequest = useCallback(async () => {
         const coords = await requestLocation();
-
         if (coords) {
-            // Kullanıcı gerçekten tarayıcıdan izin verdiyse:
-            try { localStorage.setItem('locationPermission', 'granted'); } catch { }
-            if (typeof window !== "undefined") {
-                setTranslateY(Math.round(window.innerHeight * 0.45)); // Haritayı görünür kıl
-                setTimeout(() => mobileMapRef.current?.triggerResize(), 400); // Küçülünce harita boyutunu güncelle
-            }
+            setTranslateY(typeof window !== "undefined" ? Math.round(window.innerHeight * 0.45) : 0);
+            setTimeout(() => mobileMapRef.current?.triggerResize(), 400);
 
             const nearest = findNearestCity(coords.lat, coords.lng);
             setDetectedCityName(nearest.name);
@@ -159,31 +96,8 @@ export default function HomeView({
                 setError("Eczane verileri yüklenemedi.");
             }
             setIsLoading(false);
-        } else {
-            // Kullanıcı custom modal'da 'İzin ver' deyip, tarayıcı native modal'ında 'Engelle' dediyse:
-            try { localStorage.setItem('locationPermission', 'denied'); } catch { }
-            if (typeof window !== "undefined") {
-                setTranslateY(0); // Listeyi tam ekranda tut (Harita hala default coords veya görünmez)
-            }
         }
     }, [requestLocation]);
-
-    const handleLocationRequest = useCallback(() => {
-        if (status === "granted") {
-            handleLocationAllow();
-        } else {
-            setShowLocationModal(true);
-        }
-    }, [status, handleLocationAllow]);
-
-    const handleLocationDeny = useCallback(() => {
-        setShowLocationModal(false);
-        try { localStorage.setItem('locationPermission', 'denied'); } catch { }
-        // Kullanıcı reddettiyse liste tam ekran kalmaya devam etmeli ki şehir seçeceğini anlasın
-        setTranslateY(0);
-
-        usePharmacyStore.getState().setLocationStatus("denied");
-    }, []);
 
     const handleCityChange = useCallback(async (_cityName: string, citySlug: string) => {
         setSelectedCitySlug(citySlug);
@@ -286,10 +200,6 @@ export default function HomeView({
     return (
         <div className="h-[100dvh] w-full overflow-hidden bg-dark-900 flex flex-col">
             <LocationBanner status={status} onRequest={handleLocationRequest} />
-
-            {showLocationModal && (
-                <LocationPermissionModal onAllow={handleLocationAllow} onDeny={handleLocationDeny} />
-            )}
             <Header
                 locationStatus={status}
                 pharmacyCount={pharmacies.length}
