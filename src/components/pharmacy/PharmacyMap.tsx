@@ -182,17 +182,22 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
         }
     }, [pharmacies, userLocation, onSelectPharmacy]);
 
+    const mapCenterOffsetRef = useRef(mapCenterOffset);
+    useEffect(() => {
+        mapCenterOffsetRef.current = mapCenterOffset;
+    }, [mapCenterOffset]);
+
     const focusOnPharmacy = useCallback((pharmacy: Pharmacy) => {
         const map = mapRef.current;
         if (!map) return;
         map.setView([pharmacy.location.lat, pharmacy.location.lng], 14, { animate: false });
         markerMapRef.current.get(getMarkerKey(pharmacy))?.openPopup();
-        if (mapCenterOffset > 0) {
+        if (mapCenterOffsetRef.current > 0) {
             requestAnimationFrame(() => {
-                map.panBy([60, mapCenterOffset - 100], { animate: true, duration: 0.5 });
+                map.panBy([0, mapCenterOffsetRef.current - 100], { animate: true, duration: 0.5 });
             });
         }
-    }, [mapCenterOffset]);
+    }, []);
 
     useImperativeHandle(ref, () => ({
         focusOnPharmacy,
@@ -242,12 +247,12 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
 
                     try {
                         currentMap.setView([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 1 });
-                        if (mapCenterOffset > 0) {
+                        if (mapCenterOffsetRef.current > 0) {
                             panTimer = setTimeout(() => {
                                 const activeMap = mapRef.current;
                                 if (!activeMap) return;
                                 try {
-                                    activeMap.panBy([0, mapCenterOffset], { animate: true, duration: 0.5 });
+                                    activeMap.panBy([0, mapCenterOffsetRef.current], { animate: true, duration: 0.5 });
                                 } catch (e) {
                                     // Ignored map destroyed error
                                 }
@@ -264,7 +269,7 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
                 };
             }
         }
-    }, [userLocation, mapCenterOffset, pharmacies, fitBounds]);
+    }, [userLocation, pharmacies, fitBounds]); // mapCenterOffset tracking kaldırıldı, böylece sürükleme yaparken sürekli fitBounds atılmaz.
 
     useEffect(() => {
         if (!activePharmacy) return;
