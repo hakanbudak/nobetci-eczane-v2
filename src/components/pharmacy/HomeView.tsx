@@ -54,6 +54,9 @@ export default function HomeView({
     const [isAnimating, setIsAnimating] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
+    // Mobil harita center offset hesaplamasını state'e taşı
+    const [mobileMapCenterOffset, setMobileMapCenterOffset] = useState(0);
+
     const pointerStartY = useRef(0);
     const translateAtDragStart = useRef(0);
     const velocityHistory = useRef<Array<{ t: number; y: number }>>([]);
@@ -78,6 +81,12 @@ export default function HomeView({
             });
         }
     }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setMobileMapCenterOffset(Math.round((window.innerHeight * 0.55) / 2));
+        }
+    }, []);
 
     const handleLocationRequest = useCallback(async () => {
         const coords = await requestLocation();
@@ -298,7 +307,7 @@ export default function HomeView({
                             pharmacies={pharmacies}
                             userLocation={coordinates}
                             activePharmacy={activePharmacy}
-                            mapCenterOffset={typeof window !== "undefined" ? Math.round((window.innerHeight * 0.55) / 2) : 0}
+                            mapCenterOffset={mobileMapCenterOffset}
                             onSelectPharmacy={setActivePharmacy}
                         />
                     </div>
