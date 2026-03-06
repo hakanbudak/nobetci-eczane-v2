@@ -268,7 +268,7 @@ export default function HomeView({
                             )}
                             {(status === "idle" || status === "requesting" || status === "denied" || status === "unavailable") && (
                                 <button
-                                    onClick={handleLocationRequest}
+                                    onClick={() => handleLocationRequest()}
                                     className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-[11px] font-semibold text-primary-300 hover:text-primary-200 cursor-pointer shadow-lg transition-colors border border-primary-500/20"
                                 >
                                     <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
