@@ -127,6 +127,16 @@ export default function HomeView({
         }
     }, [requestLocation]);
 
+    const handleFocusUserLocation = useCallback(() => {
+        if (coordinates) {
+            desktopMapRef.current?.focusOnUserLocation(coordinates);
+            mobileMapRef.current?.focusOnUserLocation(coordinates);
+        } else {
+            handleLocationRequest();
+        }
+    }, [coordinates, handleLocationRequest]);
+
+
     const handleCityChange = useCallback(async (_cityName: string, citySlug: string) => {
         setSelectedCitySlug(citySlug);
         setSelectedDistrictSlug("");
@@ -303,6 +313,20 @@ export default function HomeView({
                             </svg>
                         </button>
 
+                        {/* Konumuma Git butonu - Desktop */}
+                        {coordinates && (
+                            <button
+                                onClick={handleFocusUserLocation}
+                                title="Konumuma Git"
+                                className="absolute bottom-20 left-3 z-[1000] w-9 h-9 bg-dark-900/90 backdrop-blur-sm border border-dark-600 hover:border-primary-500/60 rounded-lg shadow-lg flex items-center justify-center transition-all duration-200 group"
+                            >
+                                <svg className="w-4.5 h-4.5 text-primary-400 group-hover:text-primary-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M12 2v4m0 12v4m10-10h-4M6 12H2" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        )}
+
                         <PharmacyMap
                             ref={desktopMapRef}
                             pharmacies={pharmacies}
@@ -354,6 +378,19 @@ export default function HomeView({
                             mapCenterOffset={windowHeight > 0 ? Math.round((windowHeight * 0.85 - translateY) / 2) : 130}
                             onSelectPharmacy={setActivePharmacy}
                         />
+
+                        {/* Konumuma Git butonu - Mobil */}
+                        {coordinates && (
+                            <button
+                                onClick={handleFocusUserLocation}
+                                className="absolute top-3 right-3 z-[9999] w-10 h-10 bg-dark-900/90 backdrop-blur-sm border border-dark-600 active:border-primary-500/60 rounded-xl shadow-lg flex items-center justify-center transition-all duration-200"
+                            >
+                                <svg className="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M12 2v4m0 12v4m10-10h-4M6 12H2" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
                     <div
                         className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
