@@ -40,15 +40,26 @@ export function useCities() {
         [slugToNameMap]
     );
 
+    const prioritySlugs = ["istanbul", "izmir", "ankara"];
+
+    const sortedCities = useMemo(() => {
+        const priority = allCities.filter((c) => prioritySlugs.includes(c.slug));
+        const rest = allCities.filter((c) => !prioritySlugs.includes(c.slug));
+        // Öncelikli şehirleri belirlenen sırada döndür
+        priority.sort((a, b) => prioritySlugs.indexOf(a.slug) - prioritySlugs.indexOf(b.slug));
+        return [...priority, ...rest];
+    }, [allCities]);
+
     const searchCities = useCallback(
         (query: string): City[] => {
-            if (!query) return allCities;
+            if (!query) return sortedCities;
             const q = query.toLowerCase();
-            return allCities.filter(
+            const results = sortedCities.filter(
                 (c) => c.name.toLowerCase().includes(q) || c.slug.includes(q)
             );
+            return results;
         },
-        [allCities]
+        [sortedCities]
     );
 
     return {
