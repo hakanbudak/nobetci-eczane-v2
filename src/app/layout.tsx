@@ -49,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr">
       <head>
+        <script async src="https://w.appzi.io/w.js?token=nIKkb"></script>
       </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
