@@ -65,16 +65,14 @@ export default function HomeView({
     const [showLocationModal, setShowLocationModal] = useState(false);
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const permissionStatus = localStorage.getItem("locationPermission");
-            if (!permissionStatus) {
-                setShowLocationModal(true);
-            } else if (permissionStatus === "granted" && status !== "granted") {
-                // Önceden izin verildiyse sayfa yenilendiğinde (F5) eczaneleri sessizce çek
-                handleLocationRequest(true);
-            }
+        const permissionStatus = localStorage.getItem("locationPermission");
+        if (!permissionStatus) {
+            setShowLocationModal(true);
+        } else if (permissionStatus === "granted") {
+            // Önceden izin verildiyse sayfa yenilendiğinde (F5) eczaneleri sessizce çek
+            handleLocationRequest(true);
         }
-    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Mobil harita offset hesabı doğrudan renderda translateY'den alınacak
     const pointerStartY = useRef(0);
@@ -93,14 +91,7 @@ export default function HomeView({
             .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     }
 
-    useEffect(() => {
-        // Otomatik konum istemek yerine mevcut konuma göre sadece mesafeleri sırala
-        if (pharmacies.length > 0 && status === "granted") {
-            requestLocation().then((coords) => {
-                if (coords) setPharmacies(sortByDistance(coords, pharmacies));
-            });
-        }
-    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
     useEffect(() => {
         setIsMounted(true);
