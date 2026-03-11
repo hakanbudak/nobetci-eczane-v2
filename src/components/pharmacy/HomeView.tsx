@@ -318,11 +318,10 @@ export default function HomeView({
                             <button
                                 onClick={handleFocusUserLocation}
                                 title="Konumuma Git"
-                                className="absolute bottom-20 left-3 z-[1000] w-9 h-9 bg-dark-900/90 backdrop-blur-sm border border-dark-600 hover:border-primary-500/60 rounded-lg shadow-lg flex items-center justify-center transition-all duration-200 group"
+                                className="absolute bottom-[108px] right-[10px] z-[1000] w-[40px] h-[40px] bg-white hover:bg-gray-50 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all duration-200 group"
                             >
-                                <svg className="w-4.5 h-4.5 text-primary-400 group-hover:text-primary-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <circle cx="12" cy="12" r="3" />
-                                    <path d="M12 2v4m0 12v4m10-10h-4M6 12H2" strokeLinecap="round" />
+                                <svg className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z" />
                                 </svg>
                             </button>
                         )}
@@ -383,11 +382,10 @@ export default function HomeView({
                         {coordinates && (
                             <button
                                 onClick={handleFocusUserLocation}
-                                className="absolute top-3 right-3 z-[9999] w-10 h-10 bg-dark-900/90 backdrop-blur-sm border border-dark-600 active:border-primary-500/60 rounded-xl shadow-lg flex items-center justify-center transition-all duration-200"
+                                className="absolute top-3 right-3 z-[5] w-10 h-10 bg-white/95 backdrop-blur-sm border border-gray-300/80 active:bg-gray-100 rounded-xl shadow-md flex items-center justify-center transition-all duration-200"
                             >
-                                <svg className="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <circle cx="12" cy="12" r="3" />
-                                    <path d="M12 2v4m0 12v4m10-10h-4M6 12H2" strokeLinecap="round" />
+                                <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z" />
                                 </svg>
                             </button>
                         )}

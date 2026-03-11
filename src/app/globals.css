@@ -69,6 +69,34 @@ body {
   background-color: var(--color-dark-800) !important;
 }
 
+/* Zoom butonlarını büyüt */
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-zoom a {
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  background: white !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
 .leaflet-popup-content-wrapper {
   background: transparent !important;
   border: none !important;
