@@ -40,6 +40,7 @@ export default function HomeView({
     const [isListVisible, setIsListVisible] = useState(true);
     const [isSeoVisible, setIsSeoVisible] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [windowHeight, setWindowHeight] = useState(0);
 
     const [selectedCitySlug, setSelectedCitySlug] = useState(initialCitySlug);
     const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
@@ -96,15 +97,17 @@ export default function HomeView({
 
     useEffect(() => {
         setIsMounted(true);
-        if (typeof window !== "undefined") {
-            setTranslateY(Math.round(window.innerHeight * 0.85 - 200));
-        }
+        const h = window.innerHeight;
+        setWindowHeight(h);
+        setTranslateY(Math.round(h * 0.85 - 200));
     }, []);
 
     const handleLocationRequest = useCallback(async (silent = false) => {
         const coords = await requestLocation(silent);
         if (coords) {
-            setTranslateY(typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85 - 200) : 0);
+            const h = window.innerHeight;
+            setWindowHeight(h);
+            setTranslateY(Math.round(h * 0.85 - 200));
             setTimeout(() => mobileMapRef.current?.triggerResize(), 400);
 
             const nearest = findNearestCity(coords.lat, coords.lng);
@@ -114,6 +117,11 @@ export default function HomeView({
             try {
                 const data = await fetchOnDutyPharmacies(nearest.slug);
                 setPharmacies(sortByDistance(coords, data));
+                // Konum izni sonrası haritayı kullanıcıya yakınlaştır
+                setTimeout(() => {
+                    desktopMapRef.current?.focusOnUserLocation(coords);
+                    mobileMapRef.current?.focusOnUserLocation(coords);
+                }, 300);
             } catch {
                 if (!silent) setError("Eczane verileri yüklenemedi.");
             }
@@ -187,7 +195,7 @@ export default function HomeView({
         mobileMapRef.current?.focusOnPharmacy(pharmacy);
     }, []);
 
-    const getMaxTranslate = () => typeof window !== "undefined" ? Math.round(window.innerHeight * 0.85 - 120) : 600;
+    const getMaxTranslate = () => windowHeight > 0 ? Math.round(windowHeight * 0.85 - 120) : 600;
 
     function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
         setIsDragging(true);
@@ -345,14 +353,14 @@ export default function HomeView({
                             pharmacies={pharmacies}
                             userLocation={coordinates}
                             activePharmacy={activePharmacy}
-                            mapCenterOffset={typeof window !== "undefined" ? Math.round((window.innerHeight * 0.85 - translateY) / 2) : 130}
+                            mapCenterOffset={windowHeight > 0 ? Math.round((windowHeight * 0.85 - translateY) / 2) : 130}
                             onSelectPharmacy={setActivePharmacy}
                         />
                     </div>
                     <div
                         className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
                         style={{
-                            height: isMounted && typeof window !== "undefined" ? Math.max(300, window.innerHeight * 0.85) : "85dvh",
+                            height: isMounted && windowHeight > 0 ? Math.max(300, windowHeight * 0.85) : "85dvh",
                             transform: `translateY(${translateY}px)`,
                             transition: isMounted && isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
                         }}

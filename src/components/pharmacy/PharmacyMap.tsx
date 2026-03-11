@@ -16,6 +16,7 @@ interface PharmacyMapProps {
 
 export interface PharmacyMapRef {
     focusOnPharmacy: (pharmacy: Pharmacy) => void;
+    focusOnUserLocation: (coords: Coordinates) => void;
     triggerResize: () => void;
     zoomToPharmacies: () => void;
 }
@@ -39,7 +40,7 @@ function createPharmacyIcon(name: string, isActive: boolean): L.DivIcon {
         className: "pharmacy-marker",
         iconSize: [200, 32],
         iconAnchor: [14, 16],
-        popupAnchor: [80, -20],
+        popupAnchor: [10, -20],
     });
 }
 
@@ -199,14 +200,27 @@ const PharmacyMap = forwardRef<PharmacyMapRef, PharmacyMapProps>(function Pharma
         }
     }, []);
 
+    const focusOnUserLocation = useCallback((coords: Coordinates) => {
+        const map = mapRef.current;
+        if (!map) return;
+        lastUserLocationTimeRef.current = Date.now();
+        map.setView([coords.lat, coords.lng], 14, { animate: true, duration: 1 });
+        if (mapCenterOffsetRef.current > 0) {
+            setTimeout(() => {
+                mapRef.current?.panBy([0, mapCenterOffsetRef.current], { animate: true, duration: 0.5 });
+            }, 400);
+        }
+    }, []);
+
     useImperativeHandle(ref, () => ({
         focusOnPharmacy,
+        focusOnUserLocation,
         triggerResize: () => mapRef.current?.invalidateSize(),
         zoomToPharmacies: () => {
             lastUserLocationTimeRef.current = 0;
             fitBounds();
         },
-    }), [focusOnPharmacy, fitBounds]);
+    }), [focusOnPharmacy, focusOnUserLocation, fitBounds]);
 
     useEffect(() => {
         initMap();
