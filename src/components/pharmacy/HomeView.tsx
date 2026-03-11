@@ -16,7 +16,14 @@ import type { Pharmacy, Coordinates } from "@/types/pharmacy";
 import type { PharmacyMapRef } from "./PharmacyMap";
 import SeoFooterMessage from "@/components/seo/SeoFooterMessage";
 
-const PharmacyMap = dynamic(() => import("./PharmacyMap"), { ssr: false });
+const PharmacyMap = dynamic(() => import("./PharmacyMap"), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-full bg-dark-800 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
+        </div>
+    ),
+});
 
 interface HomeViewProps {
     initialPharmacies?: Pharmacy[];
