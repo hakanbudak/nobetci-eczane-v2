@@ -257,8 +257,6 @@ export default function HomeView({
             )}
             <LocationBanner status={status} onRequest={handleLocationRequest} />
             <Header
-                locationStatus={status}
-                pharmacyCount={pharmacies.length}
                 cityName={detectedCityName || selectedCitySlug}
                 citySelectorProps={{
                     selectedCity: selectedCitySlug,
