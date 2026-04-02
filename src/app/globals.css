@@ -287,3 +287,10 @@ body {
   width: 0 !important;
   opacity: 0;
 }
+
+/* Appzi feedback butonunu yukarı taşı — liste paneli ile çakışmasın */
+[data-appzi-dom="launcher"] {
+  top: 35% !important;
+  transform: translate3d(-30px, 60px, 0) rotate(-90deg) !important;
+}
+

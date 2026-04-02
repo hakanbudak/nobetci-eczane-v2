@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { LocationStatus } from "@/types/pharmacy";
 import CitySelector from "@/components/location/CitySelector";
 
@@ -13,6 +14,7 @@ interface HeaderProps {
         onCityChange: (name: string, slug: string) => void;
         onDistrictChange: (name: string, slug: string) => void;
         onClear: () => void;
+        onDistrictClear?: () => void;
     };
 }
 
@@ -38,28 +40,22 @@ export default function Header({ cityName, citySelectorProps }: HeaderProps) {
     return (
         <header className="h-16 bg-dark-950/80 backdrop-blur-md border-b border-dark-700/50 flex items-center px-4 sticky top-0 z-[2000]">
             <div className="flex items-center justify-between w-full max-w-[1920px] mx-auto gap-4">
-                {/* Sol: Logo */}
+                {/* Sol: Logo & Başlık */}
                 <div className="flex-1 flex justify-start shrink-0 min-w-0">
                     <Link
                         href="/"
                         className="flex items-center gap-2 text-primary-400 font-bold text-base tracking-tight hover:text-primary-300 transition-colors shrink-0"
                     >
-                        <span className="w-8 h-8 bg-[#FF0000] rounded-lg flex items-center justify-center text-white text-sm font-black border-2 border-white shadow-lg shadow-red-500/20">
-                            E
-                        </span>
-                        <span className="text-dark-100 hidden sm:inline-block whitespace-nowrap overflow-hidden text-ellipsis">
-                            {cityName ? `${cityName} Nöbetçi Eczane` : "Nöbetçi Eczane"}
+                        <Image src="/eczanebul.png" alt="Eczane Bul Logo" width={58} height={58} className="rounded-xl object-contain" />
+                        <span className="text-dark-100 inline-block whitespace-nowrap overflow-hidden text-ellipsis ml-1">
+                            {cityName ? `${cityName} Nöbetçi Eczaneleri` : "Nöbetçi Eczaneleri"}
                         </span>
                     </Link>
                 </div>
 
-                {/* Orta: Arama (Merkezi) */}
+                {/* Orta: Boş (Arama taşındı) */}
                 <div className="flex-[2] w-full max-w-2xl relative z-[100] flex justify-center">
-                    {citySelectorProps && (
-                        <div className="w-full">
-                            <CitySelector {...citySelectorProps} variant="header" />
-                        </div>
-                    )}
+                    {/* Ortası boş bırakıldı */}
                 </div>
 
                 {/* Sağ: İkonlar */}
@@ -67,7 +63,7 @@ export default function Header({ cityName, citySelectorProps }: HeaderProps) {
                     {/* İkonlar (Mobil & Desktop Görünür) */}
                     <div className="flex items-center gap-1 md:gap-2">
                         <a
-                            href="https://github.com"
+                            href="https://github.com/hakanbudak"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-dark-700 bg-dark-800/50 text-dark-300 hover:text-dark-100 hover:border-dark-500 transition-all"
