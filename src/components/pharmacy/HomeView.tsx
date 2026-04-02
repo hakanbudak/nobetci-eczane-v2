@@ -256,16 +256,15 @@ export default function HomeView({
                 setError("Eczane verileri yüklenemedi.");
             }
             setIsLoading(false);
-            setTimeout(() => {
-                desktopMapRef.current?.triggerResize();
-                mobileMapRef.current?.triggerResize();
-                if (coordinates) {
-                    desktopMapRef.current?.focusOnUserLocation(coordinates);
-                    mobileMapRef.current?.focusOnUserLocation(coordinates);
-                } else {
+            if (coordinates) {
+                shouldAutoFocusUserRef.current = true;
+            } else {
+                setTimeout(() => {
+                    desktopMapRef.current?.triggerResize();
+                    mobileMapRef.current?.triggerResize();
                     zoomAllMaps();
-                }
-            }, 150);
+                }, 150);
+            }
         }
     }, [selectedCitySlug, coordinates]);
 
