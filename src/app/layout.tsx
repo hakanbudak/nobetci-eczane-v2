@@ -49,6 +49,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="tr">
       <head>
         <script async src="https://w.appzi.io/w.js?token=nIKkb"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-NFJXFWQFN6"></script>
+        <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NFJXFWQFN6');` }} />
       </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
