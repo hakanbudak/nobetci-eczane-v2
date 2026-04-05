@@ -34,13 +34,19 @@ function deduplicateByPhone(items: PharmlushDutyItem[]): PharmlushDutyItem[] {
 
 export async function fetchOnDutyPharmacies(
     citySlug: string,
-    districtSlug?: string
+    districtSlug?: string,
+    coords?: { lat: number; lng: number; radiusKm?: number }
 ): Promise<Pharmacy[]> {
     const params: Record<string, string | number> = {
         province: citySlug,
         limit: 100,
     };
     if (districtSlug) params.district = districtSlug;
+    if (coords) {
+        params.lat = coords.lat;
+        params.lng = coords.lng;
+        if (coords.radiusKm) params.radius_km = coords.radiusKm;
+    }
 
     const allItems: PharmlushDutyItem[] = [];
     let page = 1;

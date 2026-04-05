@@ -86,11 +86,6 @@ export default function HomeView({
             .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     }
 
-    function filterByRadius(sorted: Pharmacy[], radiusKm: number) {
-        const nearby = sorted.filter((p) => (p.distance ?? Infinity) <= radiusKm);
-        return nearby.length > 0 ? nearby : sorted;
-    }
-
     useEffect(() => {
         setIsMounted(true);
         const h = window.innerHeight;
@@ -152,12 +147,13 @@ export default function HomeView({
                 if (detectedDistrict) {
                     setSelectedDistrictSlug(detectedDistrict.slug);
                     setSelectedDistrictName(detectedDistrict.name);
-                    const data = await fetchOnDutyPharmacies(nearest.slug, detectedDistrict.slug);
-                    setPharmacies(filterByRadius(sortByDistance(coords, data), 5));
-                } else if (!LARGE_CITY_SLUGS.has(nearest.slug)) {
-                    const data = await fetchOnDutyPharmacies(nearest.slug);
-                    setPharmacies(filterByRadius(sortByDistance(coords, data), 5));
                 }
+                const data = await fetchOnDutyPharmacies(
+                    nearest.slug,
+                    undefined,
+                    { lat: coords.lat, lng: coords.lng, radiusKm: 5 }
+                );
+                setPharmacies(sortByDistance(coords, data));
                 // Büyük şehir + ilçe tespit edilemedi → "İlçe Seçin" göster
             } catch {
                 if (!silent) setError("Eczane verileri yüklenemedi.");
