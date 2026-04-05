@@ -9,7 +9,7 @@ import PharmacyList from "@/components/pharmacy/PharmacyList";
 import CitySelector from "@/components/location/CitySelector";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
-import { findNearestCity } from "@/utils/reverseGeocode";
+import { findNearestCity, detectDistrictFromCoords } from "@/utils/reverseGeocode";
 import { calculateDistance } from "@/utils/distance";
 import type { Pharmacy, Coordinates } from "@/types/pharmacy";
 import type { PharmacyMapRef } from "./PharmacyMap";
@@ -53,6 +53,8 @@ export default function HomeView({
     const [selectedDistrictSlug, setSelectedDistrictSlug] = useState(initialDistrictSlug);
     const [selectedDistrictName, setSelectedDistrictName] = useState(initialDistrictName);
     const [detectedCityName, setDetectedCityName] = useState(initialCityName);
+
+    const LARGE_CITY_SLUGS = new Set(["istanbul", "ankara", "izmir"]);
 
     const { coordinates, status, requestLocation } = useGeolocation();
     const desktopMapRef = useRef<PharmacyMapRef>(null);
@@ -139,15 +141,26 @@ export default function HomeView({
             setError(null);
 
             try {
-                const data = await fetchOnDutyPharmacies(nearest.slug);
-                setPharmacies(sortByDistance(coords, data));
+                // Nominatim ile koordinattan ilçeyi tespit et
+                const detectedDistrict = detectDistrictFromCoords(nearest.slug, coords.lat, coords.lng);
+
+                if (detectedDistrict) {
+                    setSelectedDistrictSlug(detectedDistrict.slug);
+                    setSelectedDistrictName(detectedDistrict.name);
+                    const data = await fetchOnDutyPharmacies(nearest.slug, detectedDistrict.slug);
+                    setPharmacies(sortByDistance(coords, data));
+                } else if (!LARGE_CITY_SLUGS.has(nearest.slug)) {
+                    const data = await fetchOnDutyPharmacies(nearest.slug);
+                    setPharmacies(sortByDistance(coords, data));
+                }
+                // Büyük şehir + ilçe tespit edilemedi → "İlçe Seçin" göster
             } catch {
                 if (!silent) setError("Eczane verileri yüklenemedi.");
             }
 
             if (!silent) setIsLoading(false);
         }
-    }, [getCollapsedTranslate, requestLocation]);
+    }, [getCollapsedTranslate, requestLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFocusUserLocation = useCallback(() => {
         if (coordinates) {
@@ -165,8 +178,18 @@ export default function HomeView({
         setSelectedDistrictName("");
         setDetectedCityName("");
         setActivePharmacy(null);
-        setIsLoading(true);
         setError(null);
+
+        if (LARGE_CITY_SLUGS.has(citySlug)) {
+            setPharmacies([]);
+            setTimeout(() => {
+                desktopMapRef.current?.triggerResize();
+                mobileMapRef.current?.triggerResize();
+            }, 150);
+            return;
+        }
+
+        setIsLoading(true);
 
         try {
             const data = await fetchOnDutyPharmacies(citySlug);
@@ -183,7 +206,7 @@ export default function HomeView({
             mobileMapRef.current?.triggerResize();
             zoomAllMaps();
         }, 150);
-    }, [coordinates]);
+    }, [coordinates]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleDistrictChange = useCallback(async (districtName: string, districtSlug: string) => {
         setSelectedDistrictSlug(districtSlug);
@@ -245,28 +268,28 @@ export default function HomeView({
         setSelectedDistrictName("");
         setActivePharmacy(null);
 
-        if (selectedCitySlug) {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const data = await fetchOnDutyPharmacies(selectedCitySlug, "");
-                const sorted = coordinates ? sortByDistance(coordinates, data) : data;
-                setPharmacies(sorted);
-            } catch {
-                setError("Eczane verileri yüklenemedi.");
-            }
-            setIsLoading(false);
-            if (coordinates) {
-                shouldAutoFocusUserRef.current = true;
-            } else {
-                setTimeout(() => {
-                    desktopMapRef.current?.triggerResize();
-                    mobileMapRef.current?.triggerResize();
-                    zoomAllMaps();
-                }, 150);
-            }
+        if (!selectedCitySlug) return;
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await fetchOnDutyPharmacies(selectedCitySlug, "");
+            const sorted = coordinates ? sortByDistance(coordinates, data) : data;
+            setPharmacies(sorted);
+        } catch {
+            setError("Eczane verileri yüklenemedi.");
         }
-    }, [selectedCitySlug, coordinates]);
+        setIsLoading(false);
+        if (coordinates) {
+            shouldAutoFocusUserRef.current = true;
+        } else {
+            setTimeout(() => {
+                desktopMapRef.current?.triggerResize();
+                mobileMapRef.current?.triggerResize();
+                zoomAllMaps();
+            }, 150);
+        }
+    }, [selectedCitySlug, coordinates]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSelectPharmacy = useCallback((pharmacy: Pharmacy) => {
         setActivePharmacy(pharmacy);
@@ -422,7 +445,7 @@ export default function HomeView({
                     </div>
 
                     {isListVisible && (
-                        <div className="w-[480px] shrink-0 h-full flex flex-col border-l border-dark-700/50">
+                        <div className="w-[480px] shrink-0 h-full flex flex-col border-l border-dark-700/50 overflow-hidden">
                             <div className="shrink-0 p-4 border-b border-dark-700/50 space-y-3 bg-dark-900">
                                 <CitySelector
                                     selectedCity={selectedCitySlug}
@@ -449,6 +472,7 @@ export default function HomeView({
                                     activePharmacy={activePharmacy}
                                     onSelect={handleSelectPharmacy}
                                     onRequestLocation={handleLocationRequest}
+                                    districtRequired={LARGE_CITY_SLUGS.has(selectedCitySlug) && !selectedDistrictSlug}
                                 />
                             </div>
                         </div>
@@ -480,11 +504,12 @@ export default function HomeView({
                     </div>
 
                     <div
-                        className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] will-change-transform"
+                        className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-dark-900 rounded-t-2xl shadow-[0_-8px_40px_rgba(0,0,0,0.5)] overflow-hidden"
                         style={{
-                            height: isMounted && windowHeight > 0 ? Math.max(300, windowHeight * 0.85) : "85dvh",
-                            transform: `translateY(${translateY}px)`,
-                            transition: isMounted && isAnimating ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
+                            height: isMounted && windowHeight > 0
+                                ? Math.max(120, Math.max(300, windowHeight * 0.85) - translateY)
+                                : "85dvh",
+                            transition: isMounted && isAnimating ? "height 0.42s cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
                         }}
                     >
                         <div

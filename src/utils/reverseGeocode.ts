@@ -1,5 +1,7 @@
 import { cities } from "@/data/cities";
 import { CITY_CENTERS } from "@/data/cityCenters";
+import { DISTRICT_CENTERS } from "@/data/districtCenters";
+import type { District } from "@/types/pharmacy";
 
 interface NearestCity {
     name: string;
@@ -41,4 +43,28 @@ export function findNearestCity(lat: number, lng: number): NearestCity {
         slug: city.slug,
         distance: Math.round(minDist * 10) / 10,
     };
+}
+
+export function detectDistrictFromCoords(
+    citySlug: string,
+    lat: number,
+    lng: number
+): District | undefined {
+    const city = cities.find((c) => c.slug === citySlug);
+    const centers = DISTRICT_CENTERS[citySlug];
+    if (!city || !centers) return undefined;
+
+    let nearestSlug: string | undefined;
+    let minDist = Infinity;
+
+    for (const [slug, center] of Object.entries(centers)) {
+        const dist = haversineDistance(lat, lng, center.lat, center.lng);
+        if (dist < minDist) {
+            minDist = dist;
+            nearestSlug = slug;
+        }
+    }
+
+    if (!nearestSlug) return undefined;
+    return city.districts.find((d) => d.slug === nearestSlug);
 }

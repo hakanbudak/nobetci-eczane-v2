@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import HomeView from "@/components/pharmacy/HomeView";
-import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
 import { PharmacySchema } from "@/components/seo/PharmacySchema";
 import { generateCanonicalUrl } from "@/utils/seoHelpers";
 
@@ -23,12 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  let pharmacies: any[] = [];
-  try {
-    pharmacies = await fetchOnDutyPharmacies("istanbul");
-  } catch (e) {
-    pharmacies = [];
-  }
+  const pharmacies: any[] = [];
 
   return (
     <>

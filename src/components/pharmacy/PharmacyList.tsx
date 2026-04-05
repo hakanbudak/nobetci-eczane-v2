@@ -9,9 +9,10 @@ interface PharmacyListProps {
     activePharmacy: Pharmacy | null;
     onSelect: (pharmacy: Pharmacy) => void;
     onRequestLocation?: () => void;
+    districtRequired?: boolean;
 }
 
-export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation }: PharmacyListProps) {
+export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation, districtRequired }: PharmacyListProps) {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
@@ -35,6 +36,20 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
     }
 
     if (pharmacies.length === 0) {
+        if (districtRequired) {
+            return (
+                <div className="flex flex-col items-center justify-center p-4 lg:p-8 text-center min-h-[220px]">
+                    <div className="w-16 h-16 lg:w-20 lg:h-20 bg-primary-500/10 rounded-2xl flex items-center justify-center mb-4 lg:mb-6 border border-primary-500/20 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
+                        <span className="text-3xl lg:text-4xl">🏙️</span>
+                    </div>
+                    <h3 className="text-lg lg:text-xl font-bold text-dark-100 mb-2">İlçe Seçin</h3>
+                    <p className="text-xs lg:text-base text-dark-400 max-w-[300px]">
+                        Bu şehirde hızlı sonuç için yukarıdan bir ilçe seçin.
+                    </p>
+                </div>
+            );
+        }
+
         return (
             <div className="flex flex-col items-center justify-center p-4 lg:p-8 text-center min-h-[220px]">
                 <div className="w-16 h-16 lg:w-20 lg:h-20 bg-primary-500/10 rounded-2xl flex items-center justify-center mb-4 lg:mb-6 border border-primary-500/20 shadow-[0_0_30px_rgba(239,68,68,0.15)] relative">

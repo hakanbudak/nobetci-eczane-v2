@@ -44,6 +44,8 @@ export async function generateStaticParams() {
 
 import { PharmacySchema } from "@/components/seo/PharmacySchema";
 
+const LARGE_CITY_SLUGS = new Set(["istanbul", "ankara", "izmir"]);
+
 export default async function CityPage({ params }: CityPageProps) {
     const { city: citySlug } = await params;
     const city = cities.find((c) => c.slug === citySlug);
@@ -51,7 +53,7 @@ export default async function CityPage({ params }: CityPageProps) {
 
     let pharmacies: Pharmacy[];
     try {
-        pharmacies = await fetchOnDutyPharmacies(citySlug);
+        pharmacies = LARGE_CITY_SLUGS.has(citySlug) ? [] : await fetchOnDutyPharmacies(citySlug);
     } catch {
         pharmacies = [];
     }
