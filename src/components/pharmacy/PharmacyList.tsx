@@ -10,9 +10,10 @@ interface PharmacyListProps {
     onSelect: (pharmacy: Pharmacy) => void;
     onRequestLocation?: () => void;
     districtRequired?: boolean;
+    districtName?: string;
 }
 
-export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation, districtRequired }: PharmacyListProps) {
+export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation, districtRequired, districtName }: PharmacyListProps) {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
@@ -77,20 +78,60 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
         );
     }
 
+    const handleShareList = () => {
+        const MAX_SHOWN = 5;
+        const shown = pharmacies.slice(0, MAX_SHOWN);
+
+        const entries = shown.map((p, i) =>
+            `*${i + 1}. ${p.name.toUpperCase()}*\n📞 ${p.phone || "-"}\n📍 ${p.address}`
+        ).join("\n\n");
+
+        const header = districtName
+            ? `🏥 *${districtName} Nöbetçi Eczaneler*`
+            : `🏥 *Nöbetçi Eczaneler*`;
+
+        const footer = pharmacies.length > MAX_SHOWN
+            ? `_...ve ${pharmacies.length - MAX_SHOWN} eczane daha_\nTümü için: eczanebul.co`
+            : `_eczanebul.co_`;
+
+        const text = `${header}\n\n${entries}\n\n${footer}`;
+
+        if (navigator.share) {
+            navigator.share({ text }).catch(() => {});
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+        }
+    };
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
-            {pharmacies.map((pharmacy, index) => (
-                <PharmacyCard
-                    key={`${pharmacy.name}__${pharmacy.address}`}
-                    pharmacy={pharmacy}
-                    isActive={
-                        activePharmacy?.name === pharmacy.name &&
-                        activePharmacy?.address === pharmacy.address
-                    }
-                    isNearest={index === 0 && pharmacy.distance != null}
-                    onSelect={() => onSelect(pharmacy)}
-                />
-            ))}
+        <div>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-1 py-2 mb-1 bg-dark-900 border-b border-dark-700/40">
+                <span className="text-[11px] text-dark-400">{pharmacies.length} nöbetçi eczane</span>
+                <button
+                    onClick={handleShareList}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white transition-all hover:brightness-110 active:scale-95 shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+                >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm4.93 13.643c-.207.581-1.22 1.113-1.676 1.176-.456.063-.883.302-2.97-.618-2.52-1.115-4.14-3.668-4.265-3.836-.127-.168-1.03-1.37-1.03-2.613 0-1.243.65-1.855.88-2.11.23-.254.5-.318.667-.318.166 0 .333 0 .48.009.153.008.36-.058.563.43.207.5.703 1.724.764 1.85.062.127.103.276.02.444-.082.168-.124.272-.248.42-.124.147-.26.328-.372.44-.124.124-.253.258-.109.506.145.248.644 1.063 1.382 1.721.951.847 1.753 1.11 2.001 1.234.249.124.394.104.54-.062.145-.166.622-.727.788-.977.166-.249.332-.207.56-.124.229.082 1.452.684 1.7.808.248.124.414.186.476.29.062.103.062.597-.145 1.178z"/>
+                    </svg>
+                    Listeyi Paylaş
+                </button>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
+                {pharmacies.map((pharmacy, index) => (
+                    <PharmacyCard
+                        key={`${pharmacy.name}__${pharmacy.address}`}
+                        pharmacy={pharmacy}
+                        isActive={
+                            activePharmacy?.name === pharmacy.name &&
+                            activePharmacy?.address === pharmacy.address
+                        }
+                        isNearest={index === 0 && pharmacy.distance != null}
+                        onSelect={() => onSelect(pharmacy)}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

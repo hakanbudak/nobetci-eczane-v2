@@ -72,7 +72,7 @@ export default function HomeView({
     const shouldAutoFocusUserRef = useRef(false);
 
     const getCollapsedTranslate = useCallback((height: number) => {
-        return Math.round(height * 0.85 - 200);
+        return Math.round(height * 0.85 - 280);
     }, []);
 
     function zoomAllMaps() {
@@ -474,6 +474,7 @@ export default function HomeView({
                                     onSelect={handleSelectPharmacy}
                                     onRequestLocation={handleLocationRequest}
                                     districtRequired={LARGE_CITY_SLUGS.has(selectedCitySlug) && !selectedDistrictSlug}
+                                    districtName={selectedDistrictName || undefined}
                                 />
                             </div>
                         </div>
@@ -553,13 +554,14 @@ export default function HomeView({
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-y-auto p-4 min-h-0 overscroll-contain" style={{ touchAction: "pan-y" }}>
+                        <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0 overscroll-contain" style={{ touchAction: "pan-y" }}>
                             <PharmacyList
                                 pharmacies={pharmacies}
                                 isLoading={isLoading}
                                 activePharmacy={activePharmacy}
                                 onSelect={handleSelectPharmacy}
                                 onRequestLocation={handleLocationRequest}
+                                districtName={selectedDistrictName || undefined}
                             />
                         </div>
                     </div>

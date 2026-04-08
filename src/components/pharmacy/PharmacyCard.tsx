@@ -102,6 +102,38 @@ export default function PharmacyCard({ pharmacy, isActive, isNearest, onSelect }
                     </a>
                 </div>
             )}
+
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    const mapsUrl = pharmacy.location
+                        ? `https://www.google.com/maps?q=${pharmacy.location.lat},${pharmacy.location.lng}`
+                        : null;
+                    const text = [
+                        `🏥 *Nöbetçi Eczane*`,
+                        ``,
+                        `*${pharmacy.name.toUpperCase()}*`,
+                        `📍 ${pharmacy.address}`,
+                        `📞 ${pharmacy.phone || "-"}`,
+                        ...(mapsUrl ? [``, `🗺 ${mapsUrl}`] : []),
+                        ``,
+                        `_eczanebul.co_`,
+                    ].join("\n");
+
+                    if (navigator.share) {
+                        navigator.share({ text }).catch(() => {});
+                    } else {
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+                    }
+                }}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-bold text-white transition-all hover:brightness-110 active:scale-95 shadow-sm"
+                style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+            >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm4.93 13.643c-.207.581-1.22 1.113-1.676 1.176-.456.063-.883.302-2.97-.618-2.52-1.115-4.14-3.668-4.265-3.836-.127-.168-1.03-1.37-1.03-2.613 0-1.243.65-1.855.88-2.11.23-.254.5-.318.667-.318.166 0 .333 0 .48.009.153.008.36-.058.563.43.207.5.703 1.724.764 1.85.062.127.103.276.02.444-.082.168-.124.272-.248.42-.124.147-.26.328-.372.44-.124.124-.253.258-.109.506.145.248.644 1.063 1.382 1.721.951.847 1.753 1.11 2.001 1.234.249.124.394.104.54-.062.145-.166.622-.727.788-.977.166-.249.332-.207.56-.124.229.082 1.452.684 1.7.808.248.124.414.186.476.29.062.103.062.597-.145 1.178z"/>
+                </svg>
+                Arkadaşına Gönder
+            </button>
         </div>
     );
 }
