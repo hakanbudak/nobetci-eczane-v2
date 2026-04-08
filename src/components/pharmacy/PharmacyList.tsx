@@ -105,7 +105,7 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
 
     return (
         <div>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-1 py-2 mb-1 bg-dark-900 border-b border-dark-700/40">
+            <div className="sticky z-10 flex items-center justify-between px-1 py-2 mb-1 bg-dark-900 border-b border-dark-700/40">
                 <span className="text-[11px] text-dark-400">{pharmacies.length} nöbetçi eczane</span>
                 <button
                     onClick={handleShareList}
