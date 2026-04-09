@@ -4,6 +4,7 @@ import { PharmacySchema } from "@/components/seo/PharmacySchema";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import SeoFooterMessage from "@/components/seo/SeoFooterMessage";
 import { CityLinksGrid } from "@/components/seo/CityLinksGrid";
+import { WebsiteSchema } from "@/components/seo/WebsiteSchema";
 import { generateCanonicalUrl } from "@/utils/seoHelpers";
 
 export const revalidate = 43200;
@@ -27,6 +28,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   return (
     <>
+      <WebsiteSchema />
       <PharmacySchema pharmacies={[]} cityName="Türkiye" />
       <BreadcrumbJsonLd items={[]} />
       <HomeView initialPharmacies={[]} initialCitySlug="" initialCityName="" />
