@@ -4,6 +4,7 @@ import type { Pharmacy, PharmlushDutyItem, PharmlushResponse } from "@/types/pha
 function mapDutyItem(item: PharmlushDutyItem): Pharmacy {
     const p = item.pharmacy;
     return {
+        id: p.id,
         name: p.name,
         district: p.district || "",
         address: p.address,
@@ -35,7 +36,8 @@ function deduplicateByPhone(items: PharmlushDutyItem[]): PharmlushDutyItem[] {
 export async function fetchOnDutyPharmacies(
     citySlug: string,
     districtSlug?: string,
-    coords?: { lat: number; lng: number; radiusKm?: number }
+    coords?: { lat: number; lng: number; radiusKm?: number },
+    maxPages?: number
 ): Promise<Pharmacy[]> {
     const params: Record<string, string | number> = {
         province: citySlug,
@@ -56,7 +58,7 @@ export async function fetchOnDutyPharmacies(
         params.page = page;
         const { data } = await api.get<PharmlushResponse>("/v1/duty-pharmacies/", { params });
         allItems.push(...data.results);
-        hasMore = data.next !== null && page < 10;
+        hasMore = data.next !== null && page < (maxPages ?? 10);
         page++;
     }
 

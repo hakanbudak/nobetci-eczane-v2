@@ -11,9 +11,11 @@ interface PharmacyListProps {
     onRequestLocation?: () => void;
     districtRequired?: boolean;
     districtName?: string;
+    citySlug?: string;
+    districtSlug?: string;
 }
 
-export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation, districtRequired, districtName }: PharmacyListProps) {
+export default function PharmacyList({ pharmacies, isLoading, activePharmacy, onSelect, onRequestLocation, districtRequired, districtName, citySlug, districtSlug }: PharmacyListProps) {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-1">
@@ -129,6 +131,8 @@ export default function PharmacyList({ pharmacies, isLoading, activePharmacy, on
                         }
                         isNearest={index === 0 && pharmacy.distance != null}
                         onSelect={() => onSelect(pharmacy)}
+                        citySlug={citySlug}
+                        districtSlug={districtSlug}
                     />
                 ))}
             </div>

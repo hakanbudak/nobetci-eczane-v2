@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import HomeView from "@/components/pharmacy/HomeView";
 import { PharmacySchema } from "@/components/seo/PharmacySchema";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import SeoFooterMessage from "@/components/seo/SeoFooterMessage";
+import { CityLinksGrid } from "@/components/seo/CityLinksGrid";
 import { generateCanonicalUrl } from "@/utils/seoHelpers";
 
 export const revalidate = 43200;
@@ -22,12 +25,13 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const pharmacies: any[] = [];
-
   return (
     <>
-      <PharmacySchema pharmacies={pharmacies} cityName="İstanbul" />
-      <HomeView initialPharmacies={pharmacies} initialCitySlug="istanbul" initialCityName="İstanbul" />
+      <PharmacySchema pharmacies={[]} cityName="Türkiye" />
+      <BreadcrumbJsonLd items={[]} />
+      <HomeView initialPharmacies={[]} initialCitySlug="" initialCityName="" />
+      <SeoFooterMessage />
+      <CityLinksGrid />
     </>
   );
 }

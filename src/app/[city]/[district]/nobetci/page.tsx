@@ -1,17 +1,31 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { cities } from "@/data/cities";
 import { fetchOnDutyPharmacies } from "@/services/pharmacyService";
 import HomeView from "@/components/pharmacy/HomeView";
 import { notFound } from "next/navigation";
 import type { City, Pharmacy } from "@/types/pharmacy";
+import { generateCanonicalUrl } from "@/utils/seoHelpers";
+import { PharmacySchema } from "@/components/seo/PharmacySchema";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { FaqJsonLd, buildDistrictFaqs } from "@/components/seo/FaqJsonLd";
+import { DistrictLinksGrid } from "@/components/seo/DistrictLinksGrid";
+import SeoFooterMessage from "@/components/seo/SeoFooterMessage";
 
 interface DistrictPageProps {
     params: Promise<{ city: string; district: string }>;
 }
 
-import { citySlug, generateCanonicalUrl } from "@/utils/seoHelpers";
+export const revalidate = 43200;
 
-export const revalidate = 43200; // 12 saatte bir sayfa statik olarak güncellenecek (ISR)
+// React.cache: aynı istek içinde generateMetadata + page aynı veriyi paylaşır, tek API çağrısı
+const getPharmacies = cache(async (citySlug: string, districtSlug: string): Promise<Pharmacy[]> => {
+    try {
+        return await fetchOnDutyPharmacies(citySlug, districtSlug);
+    } catch {
+        return [];
+    }
+});
 
 export async function generateMetadata({ params }: DistrictPageProps): Promise<Metadata> {
     const { city: cityParam, district: districtParam } = await params;
@@ -21,20 +35,30 @@ export async function generateMetadata({ params }: DistrictPageProps): Promise<M
     const district = city.districts.find((d) => d.slug === districtParam);
     if (!district) return { title: "Nöbetçi Eczane Bulunamadı" };
 
+    const pharmacies = await getPharmacies(city.slug, district.slug);
+    const count = pharmacies.length;
     const canonicalUrl = generateCanonicalUrl(`${city.slug}/${district.slug}/nobetci`);
+
+    const description = count > 0
+        ? `${city.name} ${district.name}'da bugün ${count} nöbetçi eczane var. Harita üzerinde konumlar, adres, telefon ve yol tarifi.`
+        : `Bugün ${city.name} ${district.name} ilçesindeki nöbetçi eczaneler. Harita konumları, adres ve telefon numaraları.`;
 
     return {
         title: `${district.name} Nöbetçi Eczaneleri — ${city.name} Bugün Açık Eczaneler | Nöbetçi Eczane`,
-        description: `Bugün ${city.name} ${district.name} ilçesindeki tüm nöbetçi eczaneler. ${district.name} nöbetçi eczane listesi, harita konumları ve telefon numaraları.`,
-        keywords: [`nöbetçi eczane ${district.name.toLowerCase()}`, `${district.name.toLowerCase()} nöbetçi eczane ${city.name.toLowerCase()}`, `bugün açık eczane ${district.name.toLowerCase()}`],
+        description,
+        keywords: [
+            `nöbetçi eczane ${district.name.toLowerCase()}`,
+            `${district.name.toLowerCase()} nöbetçi eczane ${city.name.toLowerCase()}`,
+            `bugün açık eczane ${district.name.toLowerCase()}`,
+        ],
         alternates: { canonical: canonicalUrl },
         openGraph: {
             title: `${district.name} Nöbetçi Eczaneleri - Haritalı Liste`,
-            description: `${city.name} ${district.name} güncel nöbetçi eczanelerini harita üzerinde bulun, nöbet çizelgelerine anında ulaşın.`,
+            description,
             url: canonicalUrl,
             type: "website",
             locale: "tr_TR",
-            siteName: "Nöbetçi Eczane"
+            siteName: "Nöbetçi Eczane",
         },
         twitter: { card: "summary_large_image" },
     };
@@ -50,8 +74,6 @@ export async function generateStaticParams() {
     return params;
 }
 
-import { PharmacySchema } from "@/components/seo/PharmacySchema";
-
 export default async function DistrictPage({ params }: DistrictPageProps) {
     const { city: citySlug, district: districtSlug } = await params;
     const city = cities.find((c) => c.slug === citySlug) as City | undefined;
@@ -59,16 +81,15 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
     const district = city.districts.find((d) => d.slug === districtSlug);
     if (!district) notFound();
 
-    let pharmacies: Pharmacy[];
-    try {
-        pharmacies = await fetchOnDutyPharmacies(citySlug, districtSlug);
-    } catch {
-        pharmacies = [];
-    }
+    const pharmacies = await getPharmacies(citySlug, districtSlug);
 
     return (
         <>
             <PharmacySchema pharmacies={pharmacies} cityName={city.name} districtName={district.name} />
+            <BreadcrumbJsonLd items={[
+                { name: `${city.name} Nöbetçi Eczaneleri`, path: `/${citySlug}/nobetci` },
+                { name: `${district.name} Nöbetçi Eczaneleri`, path: `/${citySlug}/${districtSlug}/nobetci` },
+            ]} />
             <HomeView
                 initialPharmacies={pharmacies}
                 initialCitySlug={citySlug}
@@ -76,6 +97,20 @@ export default async function DistrictPage({ params }: DistrictPageProps) {
                 initialDistrictSlug={districtSlug}
                 initialDistrictName={district.name}
             />
+            <SeoFooterMessage
+                cityName={city.name}
+                districtName={district.name}
+                selectedCitySlug={citySlug}
+                selectedDistrictSlug={districtSlug}
+                pharmacyCount={pharmacies.length}
+            />
+            <DistrictLinksGrid
+                citySlug={citySlug}
+                cityName={city.name}
+                districts={city.districts}
+                currentDistrictSlug={districtSlug}
+            />
+            <FaqJsonLd items={buildDistrictFaqs(city.name, district.name, pharmacies.length)} />
         </>
     );
 }

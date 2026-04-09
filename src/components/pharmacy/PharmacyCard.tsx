@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import type { Pharmacy } from "@/types/pharmacy";
 import { formatDistance } from "@/utils/distance";
+import { pharmacySlug } from "@/utils/seoHelpers";
 import { useMemo } from "react";
 
 interface PharmacyCardProps {
@@ -9,9 +11,11 @@ interface PharmacyCardProps {
     isActive: boolean;
     isNearest: boolean;
     onSelect: () => void;
+    citySlug?: string;
+    districtSlug?: string;
 }
 
-export default function PharmacyCard({ pharmacy, isActive, isNearest, onSelect }: PharmacyCardProps) {
+export default function PharmacyCard({ pharmacy, isActive, isNearest, onSelect, citySlug, districtSlug }: PharmacyCardProps) {
     const distanceStatus = useMemo(() => {
         const dist = pharmacy.distance;
         if (dist === undefined) return "neutral";
@@ -66,7 +70,17 @@ export default function PharmacyCard({ pharmacy, isActive, isNearest, onSelect }
                     E
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-dark-50 text-xs leading-tight line-clamp-2">{pharmacy.name}</h3>
+                    {citySlug && districtSlug && pharmacy.id ? (
+                        <Link
+                            href={`/${citySlug}/${districtSlug}/${pharmacySlug(pharmacy.name, pharmacy.id)}`}
+                            className="font-semibold text-dark-50 text-xs leading-tight line-clamp-2 hover:text-primary-300 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {pharmacy.name}
+                        </Link>
+                    ) : (
+                        <h3 className="font-semibold text-dark-50 text-xs leading-tight line-clamp-2">{pharmacy.name}</h3>
+                    )}
                     <p className="text-[11px] text-dark-400 leading-snug mt-0.5 line-clamp-2">{pharmacy.address}</p>
                 </div>
             </div>

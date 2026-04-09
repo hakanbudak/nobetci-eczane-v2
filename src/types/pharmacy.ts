@@ -4,6 +4,7 @@ export interface Coordinates {
 }
 
 export interface Pharmacy {
+    id?: number;
     name: string;
     district: string;
     address: string;

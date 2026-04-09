@@ -94,6 +94,9 @@ export default function HomeView({
     }, [getCollapsedTranslate]);
 
     useEffect(() => {
+        // Kullanıcı belirli bir şehir/ilçe URL'ine bilerek geldiyse otomatik konum override etmez
+        if (initialCitySlug) return;
+
         const permissionStatus = localStorage.getItem("locationPermission");
 
         if (!permissionStatus) {
@@ -475,6 +478,8 @@ export default function HomeView({
                                     onRequestLocation={handleLocationRequest}
                                     districtRequired={LARGE_CITY_SLUGS.has(selectedCitySlug) && !selectedDistrictSlug}
                                     districtName={selectedDistrictName || undefined}
+                                    citySlug={selectedCitySlug || undefined}
+                                    districtSlug={selectedDistrictSlug || undefined}
                                 />
                             </div>
                         </div>
@@ -562,6 +567,8 @@ export default function HomeView({
                                 onSelect={handleSelectPharmacy}
                                 onRequestLocation={handleLocationRequest}
                                 districtName={selectedDistrictName || undefined}
+                                citySlug={selectedCitySlug || undefined}
+                                districtSlug={selectedDistrictSlug || undefined}
                             />
                         </div>
                     </div>
